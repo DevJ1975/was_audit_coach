@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "count": 15,
+  "questions": [
+    {
+      "key": "SCOPE-01",
+      "question": "Does this facility have permit-required confined spaces (PRCS)?",
+      "activates": [
+        "CS-1",
+        "CS-2",
+        "CS-3",
+        "CS-4",
+        "CS-5",
+        "CS-6",
+        "CS-7",
+        "CS-8",
+        "CS-9",
+        "CS-10",
+        "CS-11",
+        "CS-12",
+        "CS-13",
+        "CS-14",
+        "CS-15",
+        "CS-16",
+        "CS-17",
+        "CS-18",
+        "CS-19",
+        "CS-20",
+        "CS-21",
+        "CS-22",
+        "CS-23",
+        "CS-24"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "All Confined Space items (CS-1 through CS-24) apply"
+    },
+    {
+      "key": "SCOPE-02",
+      "question": "Does this facility have powered industrial trucks (forklifts, pallet jacks)?",
+      "activates": [
+        "PIT-1",
+        "PIT-2",
+        "PIT-3",
+        "PIT-4",
+        "PIT-5",
+        "PIT-6",
+        "PIT-7",
+        "PIT-8",
+        "PIT-9",
+        "PIT-10",
+        "PIT-11"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "All Forklifts & Materials items (PIT-1 through PIT-11) apply"
+    },
+    {
+      "key": "SCOPE-03",
+      "question": "Does this facility have overhead cranes, gantry cranes, or hoists?",
+      "activates": [
+        "CR-1",
+        "CR-2",
+        "CR-3",
+        "CR-4",
+        "CR-5",
+        "CR-6",
+        "CR-7",
+        "CR-8",
+        "CR-9",
+        "CR-10"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "All Cranes, Hoists & Rigging items (CR-1 through CR-10) apply"
+    },
+    {
+      "key": "SCOPE-04",
+      "question": "Does this facility have welding, cutting, or brazing operations?",
+      "activates": [
+        "WC-1",
+        "WC-2",
+        "WC-3",
+        "WC-4",
+        "WC-5",
+        "WC-6",
+        "WC-7",
+        "WC-8",
+        "WC-9",
+        "WC-10"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "All Welding & Hot Work items (WC-1 through WC-10) apply"
+    },
+    {
+      "key": "SCOPE-05",
+      "question": "Do any employees have occupational exposure to blood or OPIM (first aid)?",
+      "activates": [
+        "BP-1",
+        "BP-2",
+        "BP-3",
+        "BP-4",
+        "BP-5",
+        "BP-6",
+        "BP-7"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "Bloodborne Pathogens items BP-1 through BP-7 apply"
+    },
+    {
+      "key": "SCOPE-06",
+      "question": "Does this facility have automatic sprinkler systems?",
+      "activates": [
+        "FP-5",
+        "FP-6",
+        "FP-7",
+        "FP-8"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "Fire Protection items FP-5 through FP-8 (sprinklers) apply"
+    },
+    {
+      "key": "SCOPE-07",
+      "question": "Does this facility have standpipe and hose systems?",
+      "activates": [
+        "FP-16"
+      ],
+      "applies_on": "No",
+      "needs_polarity_confirmation": true,
+      "audit_impact": "Fire Protection item FP-16 (standpipe systems) applies"
+    },
+    {
+      "key": "SCOPE-08",
+      "question": "Does this facility use LP gas / propane?",
+      "activates": [
+        "HM-9",
+        "HM-10",
+        "HM-11"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "Hazardous Materials items HM-9 through HM-11 (LP gas) apply"
+    },
+    {
+      "key": "SCOPE-09",
+      "question": "Does this facility have abrasive blasting operations?",
+      "activates": [
+        "OH-1"
+      ],
+      "applies_on": "No",
+      "needs_polarity_confirmation": true,
+      "audit_impact": "Occupational Health item OH-1 (abrasive blasting ventilation) applies"
+    },
+    {
+      "key": "SCOPE-10",
+      "question": "Does this facility have spray finishing / painting operations?",
+      "activates": [
+        "OH-3"
+      ],
+      "applies_on": "No",
+      "needs_polarity_confirmation": true,
+      "audit_impact": "Occupational Health item OH-3 (spray finishing ventilation) applies"
+    },
+    {
+      "key": "SCOPE-11",
+      "question": "Does this facility have mechanical power presses?",
+      "activates": [
+        "MG-11",
+        "MG-12"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "Machine Guarding items MG-11 and MG-12 (power presses) apply"
+    },
+    {
+      "key": "SCOPE-12",
+      "question": "Do employees work in areas with noise levels at or above 85 dBA?",
+      "activates": [
+        "OH-4",
+        "OH-5",
+        "OH-6",
+        "OH-7",
+        "OH-8",
+        "OH-9",
+        "OH-10"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "Occupational Health items OH-4 through OH-10 (hearing conservation) apply"
+    },
+    {
+      "key": "SCOPE-13",
+      "question": "Does this facility store or use compressed gas cylinders?",
+      "activates": [
+        "HM-1",
+        "HM-2",
+        "HM-3",
+        "HM-4"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "Hazardous Materials items HM-1 through HM-4 (compressed gas) apply"
+    },
+    {
+      "key": "SCOPE-14",
+      "question": "Does this facility store or use flammable or combustible liquids?",
+      "activates": [
+        "HM-5",
+        "HM-6",
+        "HM-7",
+        "HM-8"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "Hazardous Materials items HM-5 through HM-8 (flammable liquids) apply"
+    },
+    {
+      "key": "SCOPE-15",
+      "question": "Does this facility generate or process combustible dust?",
+      "activates": [
+        "HC-10"
+      ],
+      "applies_on": "Yes",
+      "needs_polarity_confirmation": false,
+      "audit_impact": "Hazard Communication item HC-10 (combustible dust) applies"
+    }
+  ]
+}

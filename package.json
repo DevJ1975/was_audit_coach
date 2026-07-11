@@ -1,0 +1,51 @@
+{
+  "name": "soteria-audit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Soteria Audit (WLS Audit Coach) — offline-first EHS audit platform. Scoring parity is sacred.",
+  "main": "expo-router/entry",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "etl": "tsx scripts/etl.ts",
+    "gen:seed": "tsx scripts/gen_cloud_seed.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "babel-plugin-module-resolver": "^5.0.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "xlsx": "^0.18.5"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~5.0.5",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@supabase/supabase-js": "^2.110.2",
+    "@types/react": "~19.0.10",
+    "expo": "^53.0.27",
+    "expo-asset": "~11.1.7",
+    "expo-constants": "~17.1.8",
+    "expo-linking": "~7.1.7",
+    "expo-router": "~5.1.11",
+    "expo-sqlite": "~15.2.14",
+    "expo-status-bar": "~2.2.3",
+    "expo-system-ui": "~5.0.11",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-native": "0.79.6",
+    "react-native-paper": "^5.15.3",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "react-native-url-polyfill": "^3.0.0",
+    "react-native-web": "^0.20.0"
+  }
+}

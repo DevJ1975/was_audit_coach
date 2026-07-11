@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Soteria Audit",
+    "slug": "soteria-audit",
+    "version": "0.1.0",
+    "scheme": "soteria",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "backgroundColor": "#0E141B",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0E141B"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.trainovate.soteriaaudit"
+    },
+    "android": {
+      "package": "com.trainovate.soteriaaudit",
+      "adaptiveIcon": {
+        "backgroundColor": "#0E141B"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

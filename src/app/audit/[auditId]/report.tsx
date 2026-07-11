@@ -1,0 +1,114 @@
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useLocalSearchParams, Stack } from 'expo-router';
+import { Text } from 'react-native-paper';
+import { Screen, Card, Title, Subtitle, Body, Mono } from '@/components/ui';
+import { SifBadge, PrivilegeBanner } from '@/components/badges';
+import { useAuditData } from '@/hooks/useAudit';
+import { useRepo, useSession } from '@/db/RepoProvider';
+import { FINDING_RATINGS, type Rating } from '@soteria/scoring-engine';
+import { ratingColors, text as textTokens, surfaces } from '@/theme/tokens';
+
+export default function ReportScreen(): React.ReactElement {
+  const { auditId } = useLocalSearchParams<{ auditId: string }>();
+  const { audit, findings } = useAuditData(auditId);
+  const repo = useRepo();
+  const session = useSession();
+
+  // Privileged audits log every view for the disclosure trail (Part 1.5). Once.
+  const logged = useRef(false);
+  useEffect(() => {
+    if (audit?.privileged && !logged.current) {
+      logged.current = true;
+      void repo.logDisclosure({
+        org_id: audit.org_id,
+        audit_id: audit.id,
+        actor_id: session.user_id,
+        action: 'view',
+      });
+    }
+  }, [audit, repo, session.user_id]);
+
+  const counts = FINDING_RATINGS.map((r) => ({
+    rating: r as Rating,
+    count: findings.filter((f) => f.rating === r).length,
+  }));
+  const sifCount = findings.filter((f) => f.sif_potential).length;
+
+  return (
+    <Screen>
+      <Stack.Screen options={{ title: 'Findings' }} />
+      {audit?.privileged ? <PrivilegeBanner attorney={audit.attorney_of_record} /> : null}
+
+      <Card>
+        <Title>Executive summary</Title>
+        <View style={styles.counts}>
+          {counts.map(({ rating, count }) => (
+            <View key={rating} style={styles.countPill}>
+              <View style={[styles.countDot, { backgroundColor: ratingColors[rating] }]} />
+              <Text style={styles.countText}>
+                {rating}: <Text style={styles.countNum}>{count}</Text>
+              </Text>
+            </View>
+          ))}
+        </View>
+        {sifCount > 0 ? (
+          <View style={styles.sifLine}>
+            <SifBadge small />
+            <Text style={styles.sifText}>{sifCount} finding{sifCount === 1 ? '' : 's'} flagged SIF-potential</Text>
+          </View>
+        ) : null}
+      </Card>
+
+      <Subtitle style={styles.heading}>
+        {findings.length} finding{findings.length === 1 ? '' : 's'} · Very High → Low
+      </Subtitle>
+
+      {findings.length === 0 ? (
+        <Text style={styles.empty}>No findings yet — rate items Low or worse to populate this list.</Text>
+      ) : null}
+
+      {findings.map((f) => (
+        <Card key={f.audit_item_id} accent={ratingColors[f.rating]}>
+          <View style={styles.findingHead}>
+            <Mono style={styles.code}>{f.item_code}</Mono>
+            {f.sif_potential ? <SifBadge small /> : null}
+            <Text style={[styles.ratingTag, { color: ratingColors[f.rating] }]}>{f.rating}</Text>
+          </View>
+          <Body>{f.requirement}</Body>
+          <Mono style={styles.citation}>{f.citation}</Mono>
+          {f.observations ? (
+            <View style={styles.block}>
+              <Text style={styles.blockLabel}>Observations</Text>
+              <Body>{f.observations}</Body>
+            </View>
+          ) : null}
+          {f.recommendations ? (
+            <View style={styles.block}>
+              <Text style={styles.blockLabel}>Recommendations</Text>
+              <Body>{f.recommendations}</Body>
+            </View>
+          ) : null}
+        </Card>
+      ))}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  counts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  countPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: surfaces.raised, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  countDot: { width: 8, height: 8, borderRadius: 4 },
+  countText: { color: textTokens.dim, fontSize: 12 },
+  countNum: { color: textTokens.primary, fontWeight: '800' },
+  sifLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  sifText: { color: textTokens.dim, fontSize: 12 },
+  heading: { marginTop: 4 },
+  empty: { color: textTokens.dim },
+  findingHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  code: { color: textTokens.primary, fontSize: 15, fontWeight: '800' },
+  ratingTag: { fontSize: 13, fontWeight: '800', marginLeft: 'auto' },
+  citation: { color: textTokens.dim, fontSize: 12 },
+  block: { gap: 2, marginTop: 4 },
+  blockLabel: { color: textTokens.faint, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
+});
