@@ -19,6 +19,15 @@ export default function AuditListScreen(): React.ReactElement {
         <Button label="+ New Audit" onPress={() => router.push('/audit/new')} />
       </View>
 
+      {/* Soteria chat (Phase C4) — corpus-grounded OSHA reference, online-only. */}
+      <Row onPress={() => router.push('/chat')}>
+        <View style={styles.rowBody}>
+          <Text style={styles.soteriaTitle}>Ask Soteria</Text>
+          <Text style={styles.soteriaSub}>Federal & state OSHA reference — every answer cited</Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
+      </Row>
+
       {IS_PLACEHOLDER ? (
         <Banner visible elevation={1} style={styles.notice} contentStyle={styles.noticeContent}>
           <Text style={styles.noticeText}>
@@ -73,6 +82,8 @@ const styles = StyleSheet.create({
   empty: { padding: 24, alignItems: 'center', gap: 8 },
   emptyBody: { color: textTokens.dim, textAlign: 'center', fontSize: 14 },
   rowBody: { flex: 1, gap: 4 },
+  soteriaTitle: { color: brand.default, fontSize: 16, fontWeight: '700' },
+  soteriaSub: { color: textTokens.dim, fontSize: 12 },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   auditTitle: { color: textTokens.primary, fontSize: 16, fontWeight: '600', flexShrink: 1 },
   rowMeta: { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },

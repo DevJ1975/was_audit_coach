@@ -24,12 +24,31 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "name": "Soteria Audit",
+      "shortName": "Soteria",
+      "description": "Offline-first EHS audit platform",
+      "themeColor": "#0E141B",
+      "backgroundColor": "#0E141B",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "en"
     },
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attach photos as audit evidence.",
+          "cameraPermission": "Capture photos as audit evidence."
+        }
+      ],
+      [
+        "expo-av",
+        { "microphonePermission": "Record voice notes as audit evidence." }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

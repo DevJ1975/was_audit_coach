@@ -41,7 +41,7 @@ export default function ItemListScreen(): React.ReactElement {
       {sectionItems.map((it) => {
         const lib = libraryItem(it.item_code);
         return (
-          <Row key={it.id} accent={undefined} onPress={() => router.push(`/audit/${auditId}/item/${it.id}`)}>
+          <Row key={it.id} testID="item-row" accent={undefined} onPress={() => router.push(`/audit/${auditId}/item/${it.id}`)}>
             <RatingDot rating={it.rating} />
             <View style={styles.body}>
               <View style={styles.top}>

@@ -232,6 +232,23 @@ export function createSqliteRepo(db: DB): Repo {
       return rows.map(toEvent);
     },
 
+    async applyMergedItems(rows) {
+      await db.withTransactionAsync(async () => {
+        for (const r of rows) {
+          await db.runAsync(
+            `INSERT INTO audit_items (id, org_id, audit_id, item_code, section_code, applicable, rating, observations, recommendations, auditor_notes, ai_generated, sync_state, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(id) DO UPDATE SET applicable=excluded.applicable, rating=excluded.rating,
+               observations=excluded.observations, recommendations=excluded.recommendations,
+               auditor_notes=excluded.auditor_notes, ai_generated=excluded.ai_generated,
+               sync_state=excluded.sync_state, updated_at=excluded.updated_at`,
+            [r.id, r.org_id, r.audit_id, r.item_code, r.section_code, int(r.applicable), r.rating,
+             r.observations, r.recommendations, r.auditor_notes, int(r.ai_generated), r.sync_state, r.updated_at],
+          );
+        }
+      });
+    },
+
     async addAttachment(audit_item_id, kind: AttachmentKind, uri, actor_id, transcription) {
       const item = await requireItem(audit_item_id);
       const att: Attachment = {

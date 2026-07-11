@@ -11,8 +11,10 @@ import { mergeAuditItem, type MergeableItem, type MergeResult } from '@/domain/c
 export interface SyncItem {
   /** Stable id shared across devices (server uuid). */
   id: string;
+  org_id: string;
   audit_id: string;
   item_code: string;
+  section_code: string;
   fields: MergeableItem;
 }
 

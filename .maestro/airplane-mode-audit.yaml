@@ -1,0 +1,77 @@
+# Maestro e2e — conduct a full audit in AIRPLANE MODE (Phase 5 exit criterion).
+# Run: maestro test .maestro/airplane-mode-audit.yaml (needs a device/emulator).
+# Proves the offline-first path end to end: scope → rate → observe → capture
+# evidence → KILL → relaunch and confirm every piece SURVIVED, with zero
+# connectivity. Rows expose testIDs (section-row / item-row) so selection is
+# stable; the item-card assertions are mandatory so a broken flow fails loudly.
+appId: com.trainovate.soteriaaudit
+---
+- launchApp:
+    clearState: true
+
+# Go fully offline — the whole loop must work with no network (Android).
+- setAirplaneMode:
+    enabled: true
+
+# 1. Start a new audit (scoping wizard).
+- tapOn: "+ New Audit"
+- tapOn: "e.g. Acme Plant — Q3 2026"
+- inputText: "Maestro — Airplane Test"
+- tapOn: "Next"
+
+# 2. Process inventory — activate at least one section (answer a question "Yes").
+- assertVisible: "Process inventory"
+- tapOn:
+    text: "Yes"
+    index: 0
+- tapOn: "Next"
+
+# 3. State plan & privilege — keep Federal only, create.
+- assertVisible: "State plan"
+- tapOn: "Create audit"
+
+# 4. Open the first section, then the first item (two taps — section list → item).
+- assertVisible: "Sections"
+- tapOn:
+    id: "section-row"
+    index: 0
+- tapOn:
+    id: "item-row"
+    index: 0
+
+# Mandatory: we must be on the item card. These fail loudly if navigation broke.
+- assertVisible: "Evidence protocol"
+- assertVisible: "Evidence"
+
+# 5. Rate the item (auditor-only) and record an observation.
+- tapOn: "Low"
+- tapOn: "What did you observe? Add a photo or voice note below."
+- inputText: "Two guards missing; voice note attached."
+
+# 6. Capture evidence — record a voice note (● Record → ■ Stop). It must persist.
+- tapOn: "● Record"
+- assertVisible: "■ Stop"
+- tapOn: "■ Stop"
+- assertVisible: "▶ Voice note"
+
+# 7. Kill and relaunch — ALL of it must survive (zero data loss, NN #3).
+- stopApp
+- launchApp
+- assertVisible: "Audits"
+- tapOn: "Maestro — Airplane Test"
+- assertVisible: "Sections"
+- tapOn:
+    id: "section-row"
+    index: 0
+- tapOn:
+    id: "item-row"
+    index: 0
+
+# The rating, the observation text, AND the voice attachment all survived.
+- assertVisible: "Low"
+- assertVisible: "Two guards missing; voice note attached."
+- assertVisible: "▶ Voice note"
+
+# 8. Restore connectivity for teardown.
+- setAirplaneMode:
+    enabled: false

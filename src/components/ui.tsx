@@ -131,11 +131,14 @@ export function Row({
   onPress,
   accent,
   style,
+  testID,
 }: {
   children: React.ReactNode;
   onPress?: () => void;
   accent?: string;
   style?: StyleProp<ViewStyle>;
+  /** Stable id for e2e selectors (Maestro `id:`). */
+  testID?: string;
 }): React.ReactElement {
   return (
     <Surface
@@ -147,6 +150,7 @@ export function Row({
         onPress={onPress}
         disabled={!onPress}
         style={styles.rowRipple}
+        testID={testID}
         borderless
       >
         <View style={styles.rowInner}>{children}</View>

@@ -1,19 +1,45 @@
-import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { Text } from 'react-native-paper';
-import { Screen, Card, Title, Subtitle, Body, Mono } from '@/components/ui';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { Screen, Card, Button, Title, Subtitle, Body, Mono } from '@/components/ui';
 import { SifBadge, PrivilegeBanner } from '@/components/badges';
 import { useAuditData } from '@/hooks/useAudit';
 import { useRepo, useSession } from '@/db/RepoProvider';
+import { buildReportModel, renderReportHtml } from '@/domain/report';
+import { libraryByCode, sectionNames } from '@/seed';
 import { FINDING_RATINGS, type Rating } from '@soteria/scoring-engine';
 import { ratingColors, text as textTokens, surfaces } from '@/theme/tokens';
 
 export default function ReportScreen(): React.ReactElement {
   const { auditId } = useLocalSearchParams<{ auditId: string }>();
-  const { audit, findings } = useAuditData(auditId);
+  const { audit, items, findings } = useAuditData(auditId);
   const repo = useRepo();
   const session = useSession();
+  const [exporting, setExporting] = useState(false);
+
+  // Export the privilege-stamped PDF and log a disclosure (Part 1.5).
+  async function exportPdf(): Promise<void> {
+    if (!audit || exporting) return;
+    setExporting(true);
+    try {
+      const model = buildReportModel(audit, items, libraryByCode, sectionNames, new Date().toLocaleString());
+      const html = renderReportHtml(model); // carries the watermark when privileged
+      await repo.logDisclosure({ org_id: audit.org_id, audit_id: audit.id, actor_id: session.user_id, action: 'export' });
+      if (Platform.OS === 'web') {
+        await Print.printAsync({ html }); // browser print → Save as PDF
+      } else {
+        const { uri } = await Print.printToFileAsync({ html });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
+        }
+      }
+    } finally {
+      setExporting(false);
+    }
+  }
 
   // Privileged audits log every view for the disclosure trail (Part 1.5). Once.
   const logged = useRef(false);
@@ -41,7 +67,10 @@ export default function ReportScreen(): React.ReactElement {
       {audit?.privileged ? <PrivilegeBanner attorney={audit.attorney_of_record} /> : null}
 
       <Card>
-        <Title>Executive summary</Title>
+        <View style={styles.summaryHead}>
+          <Title>Executive summary</Title>
+          <Button label={exporting ? 'Exporting…' : 'Export PDF'} onPress={exportPdf} disabled={exporting} />
+        </View>
         <View style={styles.counts}>
           {counts.map(({ rating, count }) => (
             <View key={rating} style={styles.countPill}>
@@ -96,6 +125,7 @@ export default function ReportScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
+  summaryHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
   counts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   countPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: surfaces.raised, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   countDot: { width: 8, height: 8, borderRadius: 4 },

@@ -6,6 +6,7 @@ import { Screen, Card, Row, Button, Title, Subtitle, Mono } from '@/components/u
 import { ScoreReadout } from '@/components/ScoreReadout';
 import { PrivilegeBanner } from '@/components/badges';
 import { useAuditData } from '@/hooks/useAudit';
+import { useSync } from '@/hooks/useSync';
 import { sectionNames, sectionOrder } from '@/seed';
 import { surfaces, text as textTokens } from '@/theme/tokens';
 
@@ -13,6 +14,7 @@ export default function SectionListScreen(): React.ReactElement {
   const { auditId } = useLocalSearchParams<{ auditId: string }>();
   const router = useRouter();
   const { audit, score, findings } = useAuditData(auditId);
+  const { sync, syncing, summary, available } = useSync(auditId);
 
   const activeSections = sectionOrder.filter((code) => score.sections[code]);
 
@@ -34,12 +36,23 @@ export default function SectionListScreen(): React.ReactElement {
           size="lg"
         />
         <View style={styles.actions}>
+          <Button label="Dashboard" variant="secondary" onPress={() => router.push(`/audit/${auditId}/dashboard`)} />
           <Button
             label={`Findings (${findings.length})`}
             variant="secondary"
             onPress={() => router.push(`/audit/${auditId}/report`)}
           />
+          <Button label="CA tracker" variant="secondary" onPress={() => router.push(`/audit/${auditId}/corrective-actions`)} />
+          {available ? (
+            <Button label={syncing ? 'Syncing…' : 'Sync'} variant="ghost" onPress={sync} disabled={syncing} />
+          ) : null}
         </View>
+        {summary && !summary.skipped ? (
+          <Text style={styles.syncNote}>
+            Synced · {summary.pushed} pushed · {summary.appliedLocal} applied
+            {summary.conflicts.length ? ` · ${summary.conflicts.length} need resolution` : ''}
+          </Text>
+        ) : null}
       </Card>
 
       <Title style={styles.sectionsHeading}>Sections</Title>
@@ -51,7 +64,7 @@ export default function SectionListScreen(): React.ReactElement {
       {activeSections.map((code) => {
         const s = score.sections[code]!;
         return (
-          <Row key={code} onPress={() => router.push(`/audit/${auditId}/section/${code}`)}>
+          <Row key={code} testID="section-row" onPress={() => router.push(`/audit/${auditId}/section/${code}`)}>
             <View style={styles.rowBody}>
               <View style={styles.rowTop}>
                 <Mono style={styles.code}>{code}</Mono>
@@ -78,7 +91,8 @@ export default function SectionListScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  syncNote: { color: textTokens.faint, fontSize: 12, marginTop: 6 },
   sectionsHeading: { fontSize: 16, marginTop: 4 },
   divider: { backgroundColor: surfaces.line },
   empty: { color: textTokens.dim },

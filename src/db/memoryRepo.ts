@@ -190,6 +190,10 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
       return events.filter((e) => e.audit_item_id === audit_item_id);
     },
 
+    async applyMergedItems(rows) {
+      for (const row of rows) items.set(row.id, { ...row });
+    },
+
     async addAttachment(audit_item_id, kind: AttachmentKind, uri, actor_id, transcription) {
       const it = requireItem(audit_item_id);
       const att: Attachment = {

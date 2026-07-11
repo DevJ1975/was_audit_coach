@@ -4,16 +4,43 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ActivityIndicator, TextInput, Text } from 'react-native-paper';
 import { Screen, Card, Button, Subtitle, Body, Mono } from '@/components/ui';
 import { RatingSelector } from '@/components/RatingSelector';
+import { AttachmentStrip } from '@/components/AttachmentStrip';
 import { SifBadge, SavedFlash, type SaveStatus } from '@/components/badges';
 import { useRepo, useSession } from '@/db/RepoProvider';
 import { useAuditItem, useAuditData } from '@/hooks/useAudit';
 import { libraryItem } from '@/seed';
 import { compareByCode } from '@/domain/ordering';
+import { requestDraft, isAiConfigured } from '@/ai/client';
+import { buildObservationPolish, buildRecommendationDraft, buildAriaCoach, type GroundingItem } from '@/ai/prompts';
 import type { Rating } from '@soteria/scoring-engine';
 import { surfaces, text as textTokens, brand, ratingColors, layout } from '@/theme/tokens';
 
 type TextField = 'observations' | 'recommendations' | 'auditor_notes';
 const TEXT_FIELDS: TextField[] = ['observations', 'recommendations', 'auditor_notes'];
+
+/** Editable AI draft — the auditor edits then Accepts; nothing is auto-applied. */
+function AiDraftBox({
+  text,
+  onAccept,
+  onDiscard,
+}: {
+  text: string;
+  onAccept: (t: string) => void;
+  onDiscard: () => void;
+}): React.ReactElement {
+  const [draft, setDraft] = useState(text);
+  useEffect(() => setDraft(text), [text]);
+  return (
+    <View style={styles.aiBox}>
+      <Text style={styles.aiLabel}>AI draft — review &amp; edit, then Accept</Text>
+      <TextInput mode="outlined" multiline value={draft} onChangeText={setDraft} style={styles.textArea} />
+      <View style={styles.aiActions}>
+        <Button label="Discard" variant="ghost" onPress={onDiscard} />
+        <Button label="Accept" variant="primary" onPress={() => onAccept(draft)} />
+      </View>
+    </View>
+  );
+}
 
 export default function ItemCardScreen(): React.ReactElement {
   const { auditId, id } = useLocalSearchParams<{ auditId: string; id: string }>();
@@ -22,7 +49,7 @@ export default function ItemCardScreen(): React.ReactElement {
   const session = useSession();
 
   const { item, reload } = useAuditItem(id);
-  const { items } = useAuditData(auditId);
+  const { audit, items } = useAuditData(auditId);
   const lib = item ? libraryItem(item.item_code) : undefined;
 
   // Prev/next within this section's applicable items (canonical order).
@@ -37,6 +64,15 @@ export default function ItemCardScreen(): React.ReactElement {
   const [notes, setNotes] = useState('');
   const [requirementOpen, setRequirementOpen] = useState(true);
   const [status, setStatus] = useState<Partial<Record<TextField, SaveStatus>>>({});
+
+  // AI drafting state (Phase 3). A draft is ALWAYS an editable suggestion the
+  // auditor must accept; it never sets a rating (Non-Negotiable #2).
+  const aiOn = isAiConfigured();
+  const [aiBusy, setAiBusy] = useState<'observations' | 'recommendations' | 'aria' | null>(null);
+  const [aiDraft, setAiDraft] = useState<{ field: 'observations' | 'recommendations'; text: string } | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [ariaQuestion, setAriaQuestion] = useState('');
+  const [ariaAnswer, setAriaAnswer] = useState<string | null>(null);
 
   const seededFor = useRef<string | null>(null);
   const mounted = useRef(true);
@@ -129,6 +165,63 @@ export default function ItemCardScreen(): React.ReactElement {
     router.replace(`/audit/${auditId}/item/${target.id}`);
   }
 
+  function grounding(): GroundingItem | null {
+    if (!item || !lib) return null;
+    return {
+      item_code: item.item_code,
+      requirement: lib.requirement,
+      evidence_protocol: lib.evidence_protocol,
+      citation: lib.citation,
+    };
+  }
+
+  async function polish(): Promise<void> {
+    const g = grounding();
+    if (!g || !obs.trim()) return;
+    setAiBusy('observations');
+    setAiError(null);
+    const r = await requestDraft(buildObservationPolish(g, obs));
+    setAiBusy(null);
+    if (r.ok) setAiDraft({ field: 'observations', text: r.text });
+    else setAiError(r.error);
+  }
+
+  async function draftRecommendation(): Promise<void> {
+    const g = grounding();
+    if (!g) return;
+    setAiBusy('recommendations');
+    setAiError(null);
+    const r = await requestDraft(buildRecommendationDraft(g, item?.rating ?? 'unrated', obs));
+    setAiBusy(null);
+    if (r.ok) setAiDraft({ field: 'recommendations', text: r.text });
+    else setAiError(r.error);
+  }
+
+  // Accept an AI draft: apply the (possibly edited) text and log ai_draft_accepted
+  // via setText with ai_generated:true. This is the ONLY AI→state path, and it
+  // touches text fields only — never the rating.
+  async function acceptDraft(edited: string): Promise<void> {
+    const draft = aiDraft;
+    if (!draft) return;
+    if (draft.field === 'observations') setObs(edited);
+    else setRec(edited);
+    setAiDraft(null);
+    await repo.setText(id, draft.field, edited, session.user_id, { ai_generated: true });
+    flashStatus(draft.field, 'saved');
+  }
+
+  async function askAria(): Promise<void> {
+    const g = grounding();
+    if (!g || !ariaQuestion.trim()) return;
+    setAiBusy('aria');
+    setAiError(null);
+    setAriaAnswer(null);
+    const r = await requestDraft(buildAriaCoach(g, ariaQuestion));
+    setAiBusy(null);
+    if (r.ok) setAriaAnswer(r.text);
+    else setAiError(r.error);
+  }
+
   if (!item || !lib) {
     return (
       <Screen>
@@ -160,6 +253,20 @@ export default function ItemCardScreen(): React.ReactElement {
           <>
             <Body>{lib.requirement}</Body>
             <Mono style={styles.citation}>{lib.citation}</Mono>
+            {/* Corpus-wide Q&A (Phase C4) — the online superset of ARIA below. */}
+            <Button
+              label="Ask Soteria about this standard"
+              variant="ghost"
+              onPress={() =>
+                router.push({
+                  pathname: '/chat',
+                  params: {
+                    seed: `What does ${lib.citation} require?`,
+                    ...(audit?.state_plan ? { jurisdiction: audit.state_plan } : {}),
+                  },
+                })
+              }
+            />
           </>
         ) : null}
       </Card>
@@ -186,13 +293,25 @@ export default function ItemCardScreen(): React.ReactElement {
           mode="outlined"
           style={styles.textArea}
           multiline
-          placeholder="What did you observe? (voice dictation arrives in Phase 2)"
+          placeholder="What did you observe? Add a photo or voice note below."
           value={obs}
           onChangeText={(t) => {
             setObs(t);
             scheduleSave('observations', t);
           }}
         />
+        <View style={styles.aiRow}>
+          <Button
+            label={aiBusy === 'observations' ? 'Polishing…' : '✨ AI polish'}
+            variant="secondary"
+            onPress={polish}
+            disabled={!aiOn || aiBusy !== null || !obs.trim()}
+          />
+          {!aiOn ? <Text style={styles.aiHint}>Connects when online</Text> : null}
+        </View>
+        {aiDraft?.field === 'observations' ? (
+          <AiDraftBox text={aiDraft.text} onAccept={acceptDraft} onDiscard={() => setAiDraft(null)} />
+        ) : null}
       </Card>
 
       <Card>
@@ -211,6 +330,51 @@ export default function ItemCardScreen(): React.ReactElement {
             scheduleSave('recommendations', t);
           }}
         />
+        <View style={styles.aiRow}>
+          <Button
+            label={aiBusy === 'recommendations' ? 'Drafting…' : '✨ AI draft'}
+            variant="secondary"
+            onPress={draftRecommendation}
+            disabled={!aiOn || aiBusy !== null}
+          />
+          {!aiOn ? <Text style={styles.aiHint}>Connects when online</Text> : null}
+        </View>
+        {aiDraft?.field === 'recommendations' ? (
+          <AiDraftBox text={aiDraft.text} onAccept={acceptDraft} onDiscard={() => setAiDraft(null)} />
+        ) : null}
+      </Card>
+
+      {aiError ? (
+        <Card>
+          <Text style={styles.aiError}>{aiError}</Text>
+        </Card>
+      ) : null}
+
+      {/* ARIA coach — grounded Q&A, answers only from this item (Non-Negotiable #8 corpus) */}
+      <Card>
+        <Subtitle>ARIA — ask about this item</Subtitle>
+        <TextInput
+          mode="outlined"
+          style={styles.textArea}
+          multiline
+          placeholder="e.g. What sampling minimum does this require?"
+          value={ariaQuestion}
+          onChangeText={setAriaQuestion}
+        />
+        <View style={styles.aiRow}>
+          <Button
+            label={aiBusy === 'aria' ? 'Thinking…' : 'Ask ARIA'}
+            variant="secondary"
+            onPress={askAria}
+            disabled={!aiOn || aiBusy !== null || !ariaQuestion.trim()}
+          />
+          {!aiOn ? <Text style={styles.aiHint}>Connects when online</Text> : null}
+        </View>
+        {ariaAnswer ? (
+          <View style={styles.aiBox}>
+            <Body>{ariaAnswer}</Body>
+          </View>
+        ) : null}
       </Card>
 
       <Card>
@@ -230,6 +394,9 @@ export default function ItemCardScreen(): React.ReactElement {
           }}
         />
       </Card>
+
+      {/* Evidence capture — photo + voice (Phase 2). A finding can carry proof. */}
+      <AttachmentStrip auditItemId={id} />
 
       {/* Prev / next */}
       <View style={styles.nav}>
@@ -268,4 +435,18 @@ const styles = StyleSheet.create({
   },
   loading: { paddingVertical: 12 },
   nav: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4 },
+  aiRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  aiHint: { color: textTokens.faint, fontSize: 12 },
+  aiError: { color: '#E7C33B', fontSize: 13 },
+  aiBox: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: brand.default,
+    borderRadius: layout.radius,
+    padding: 10,
+    gap: 8,
+    backgroundColor: surfaces.raised,
+  },
+  aiLabel: { color: brand.default, fontSize: 12, fontWeight: '700' },
+  aiActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
 });

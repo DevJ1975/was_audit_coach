@@ -29,8 +29,19 @@ Build contract & non-negotiables: `CLAUDE.md`.
 | Conflict policy — LWW per field, rating → `needs_resolution` | ✅ done (9 tests) |
 | **React Native Paper** (Material 3) restyle, themed to OSHA tokens | ✅ done |
 | WLS logo header (wordmark until PNG) + "Powered by Trainovate" footer | ✅ done |
-| Full sync engine (push/pull outbox, attachment upload) | ⏳ next — conflict core done |
+| **Sync engine** — pull→reconcile→apply/push, per-audit cursor, `Sync` button | ✅ done (7 engine tests) |
+| Attachment upload sync + multi-device end-to-end verification | ⏳ needs 2 devices + live backend |
+| **Phase 3 AI** — grounded prompts + `ai-draft` Edge Function + evals | ✅ done |
+| Item card: AI polish / draft / ARIA, editable Accept-Discard, offline-disabled | ✅ done |
+| **Phase 5** — Dashboard · CA tracker · findings report | ✅ done |
+| PDF export (expo-print) with privilege watermark + disclosure logging | ✅ done |
+| Analytics seeds (repeat findings · median days-to-close) | ✅ done |
+| PWA manifest / web hardening | ✅ done |
+| **Soteria chat C1–C4** — eCFR ETL (853 docs / 3.6k chunks) · hybrid retrieval · `soteria-chat` Edge Function with verified citations · chat screen | ✅ done (see `SOTERIA_CHAT_KB_PLAN.md`) |
+| Soteria chat cloud bring-up — apply `0003_reg_corpus.sql`, set secrets, deploy, `npm run reg-etl` | ⏳ needs live backend |
+| `npm test` — 101 tests | ✅ green |
 | Native runtime (iOS/Android device) verification | ⏳ needs device/simulator |
+| Phase 2 (camera/voice evidence) | ⏳ needs device |
 | SIF curation · confirm FP-16/OH-1/OH-3 polarity · app-store name | ⏳ Part 5 — awaits Jay |
 
 ## Commands
@@ -43,6 +54,8 @@ npm test           # scoring + domain suites (CI gate; §1.2 must stay green)
 npm run typecheck  # strict tsc
 npx expo export --platform web   # verify the app bundles
 npm run etl -- WLS_Audit_Coach_OSHA.xlsx   # generate real seed (needs the workbook)
+npm run reg-etl -- --dry-run   # pull + parse the federal OSHA corpus (eCFR), no writes
+npm run reg-etl                # …and load it (needs SUPABASE_URL + SERVICE_ROLE_KEY; VOYAGE_API_KEY to embed)
 ```
 
 ## Blockers to advance

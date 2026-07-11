@@ -1,0 +1,25 @@
+{
+  "description": "Retrieval smoke set (Phase C2 acceptance, SOTERIA_CHAT_KB_PLAN.md). Each question must surface the expected section within the top matches. Starter set — the SME golden set (~150–200 questions, Phase C6) grows from here.",
+  "questions": [
+    { "q": "When is a written lockout tagout program required?", "expect": "29 CFR 1910.147" },
+    { "q": "What must a hazard communication program include for safety data sheets?", "expect": "29 CFR 1910.1200" },
+    { "q": "Is a medical evaluation required before an employee wears a respirator?", "expect": "29 CFR 1910.134" },
+    { "q": "How often must portable fire extinguishers be inspected?", "expect": "29 CFR 1910.157" },
+    { "q": "Which small employers are exempt from OSHA injury and illness recordkeeping?", "expect": "29 CFR 1904" },
+    { "q": "How soon must a work-related fatality be reported to OSHA?", "expect": "29 CFR 1904.39" },
+    { "q": "What is required before entering a permit-required confined space?", "expect": "29 CFR 1910.146" },
+    { "q": "At what height is fall protection required on a construction site?", "expect": "29 CFR 1926.501" },
+    { "q": "What protective systems are required for trench and excavation work?", "expect": "29 CFR 1926.652" },
+    { "q": "How much weight must a scaffold support relative to its intended load?", "expect": "29 CFR 1926.451" },
+    { "q": "What must an exposure control plan for bloodborne pathogens contain?", "expect": "29 CFR 1910.1030" },
+    { "q": "What training is required for forklift operators?", "expect": "29 CFR 1910.178" },
+    { "q": "When is machine guarding required at the point of operation?", "expect": "29 CFR 1910.212" },
+    { "q": "When are quick drenching eyewash facilities required?", "expect": "29 CFR 1910.151" },
+    { "q": "At what noise level must a hearing conservation program begin?", "expect": "29 CFR 1910.95" },
+    { "q": "What are the requirements for working on deenergized electrical parts?", "expect": "29 CFR 1910.333" },
+    { "q": "May an OSHA compliance officer enter a workplace to inspect it?", "expect": "29 CFR 1903" },
+    { "q": "What fire precautions apply to welding and cutting in shipyards?", "expect": "29 CFR 1915" },
+    { "q": "What is the permissible exposure limit for asbestos in general industry?", "expect": "29 CFR 1910.1001" },
+    { "q": "What must an emergency action plan include?", "expect": "29 CFR 1910.38" }
+  ]
+}

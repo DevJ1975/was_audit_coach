@@ -11,7 +11,12 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['packages/**/*.test.ts', 'src/**/*.test.ts'],
+    include: [
+      'packages/**/*.test.ts',
+      'src/**/*.test.ts',
+      'scripts/**/*.test.ts',
+      'supabase/functions/**/*.test.ts',
+    ],
     environment: 'node',
   },
 });

@@ -17,7 +17,7 @@ function fields(o: Partial<{ rating: [Rating | null, string]; obs: [string, stri
   };
 }
 function item(id: string, f: MergeableItem): SyncItem {
-  return { id, audit_id: 'a1', item_code: id, fields: f };
+  return { id, org_id: 'o', audit_id: 'a1', item_code: id, section_code: 'CS', fields: f };
 }
 
 describe('reconcile', () => {

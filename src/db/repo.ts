@@ -75,6 +75,15 @@ export interface Repo {
   // --- Events (read; append is internal to the mutations above) -------------
   listEvents(audit_item_id: string): Promise<AuditItemEvent[]>;
 
+  // --- Sync plumbing (Phase 4; behind the seam) -----------------------------
+  /**
+   * Upsert full audit_item rows that arrived from sync (server or a merge).
+   * Sets fields + sync_state directly and does NOT append per-field events —
+   * these are reconciled writes, not auditor edits. Creates rows that don't
+   * exist locally (items authored on another device).
+   */
+  applyMergedItems(items: AuditItem[]): Promise<void>;
+
   // --- Attachments ----------------------------------------------------------
   addAttachment(
     audit_item_id: string,
