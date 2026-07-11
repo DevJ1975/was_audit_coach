@@ -2,7 +2,7 @@
   "expo": {
     "name": "WLS Audit Coach",
     "slug": "soteria-audit",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "scheme": "soteria",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
