@@ -18,10 +18,24 @@ export interface TurnState {
   done: boolean;
   /** Set when the turn failed; `reply` may still hold partial text. */
   error: string | null;
+  /** Tool uses seen but not (yet) denied — fallback denial targets, because
+   *  `evaluated_permission` is not in the documented event schema and may be
+   *  absent at runtime. */
+  pendingToolIds: string[];
+  /** A reaction was queued since the last idle check (session will resume). */
+  reacted: boolean;
 }
 
 export function initialTurn(): TurnState {
-  return { reply: '', inputTokens: 0, outputTokens: 0, done: false, error: null };
+  return {
+    reply: '',
+    inputTokens: 0,
+    outputTokens: 0,
+    done: false,
+    error: null,
+    pendingToolIds: [],
+    reacted: false,
+  };
 }
 
 /** Follow-up events the caller must send back to the session, in order. */
@@ -63,17 +77,24 @@ export function reduceTurnEvent(state: TurnState, event: SessionEventLike): Turn
       return [];
 
     // Built-in / MCP tool configured `always_ask`: decline — nobody is here to
-    // approve, and an unanswered ask idles the session forever.
+    // approve, and an unanswered ask idles the session forever. When the
+    // permission field is absent (it is undocumented), remember the id so a
+    // later `requires_action` idle can still deny it instead of timing out.
     case 'agent.tool_use':
-      if (event.evaluated_permission === 'ask' && event.id) {
+      if (!event.id) return [];
+      if (event.evaluated_permission === 'ask') {
+        state.reacted = true;
         return [{ kind: 'deny_tool', toolUseId: event.id }];
       }
+      state.pendingToolIds.push(event.id);
       return [];
 
     // Custom client-side tool: this integration implements none, so answer
     // with an error result and let the agent continue without it.
     case 'agent.custom_tool_use':
-      return event.id ? [{ kind: 'fail_custom_tool', customToolUseId: event.id }] : [];
+      if (!event.id) return [];
+      state.reacted = true;
+      return [{ kind: 'fail_custom_tool', customToolUseId: event.id }];
 
     case 'session.error':
       state.error = event.error?.message ?? 'The coach hit an error.';
@@ -87,9 +108,29 @@ export function reduceTurnEvent(state: TurnState, event: SessionEventLike): Turn
 
     case 'session.status_idle': {
       const stop = event.stop_reason?.type;
-      // requires_action: the session is waiting on the reactions we already
-      // queued (deny / error result) — keep reading, the agent resumes.
-      if (stop === 'requires_action') return [];
+      if (stop === 'requires_action') {
+        // Waiting on the reactions we already queued — the agent resumes.
+        if (state.reacted) {
+          state.reacted = false;
+          return [];
+        }
+        // Nothing queued: deny every tool use we saw but never answered (the
+        // undocumented-permission fallback), then keep reading.
+        if (state.pendingToolIds.length > 0) {
+          const reactions: TurnReaction[] = state.pendingToolIds.map((id) => ({
+            kind: 'deny_tool',
+            toolUseId: id,
+          }));
+          state.pendingToolIds = [];
+          return reactions;
+        }
+        // Waiting on something we cannot provide — fail fast, keep any text.
+        if (!state.reply) {
+          state.error = "The coach is waiting on an approval this surface can't provide — try again.";
+        }
+        state.done = true;
+        return [];
+      }
       if (stop === 'retries_exhausted' && !state.reply) {
         state.error = 'The coach could not complete that — try again in a moment.';
       }

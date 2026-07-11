@@ -2,15 +2,18 @@
 
 ## Apply the schema
 
-The migration creates the full Part 3 schema + RLS + JWT helpers. Apply it to your
-project (`dklwdrtvvjoivmxljcof`) either way:
+The migration creates the full Part 3 schema + RLS + JWT helpers. The live
+backend is project **`tvgutsihvyjflqsihxxi` ("Soteria Audit")** — stood up
+2026-07-11 via the Supabase MCP connector: migrations 0001–0004 applied as
+numbered migrations, 374-item library seeded (checksum-verified), all three AI
+Edge Functions deployed. To apply future migrations either way:
 
-**Dashboard:** SQL Editor → paste `migrations/0001_init.sql` → Run.
+**Dashboard:** SQL Editor → paste the migration → Run.
 
 **CLI:**
 ```bash
-supabase link --project-ref dklwdrtvvjoivmxljcof
-supabase db push          # applies migrations/0001_init.sql
+supabase link --project-ref tvgutsihvyjflqsihxxi
+supabase db push          # applies supabase/migrations/*
 ```
 
 ## Verify RLS isolation (Phase 4 exit criterion)

@@ -97,4 +97,37 @@ describe('reduceTurnEvent', () => {
     expect(state.error).toBeNull();
     expect(state.reply).toBe('Partial guidance.');
   });
+
+  // `evaluated_permission` is not in the documented event schema — when it is
+  // absent, a requires_action idle must still deny the seen tool uses instead
+  // of spinning to the wall-clock timeout.
+  it('denies unanswered tool uses on requires_action when the permission field is absent', () => {
+    const { state, reactions } = run([
+      { type: 'agent.tool_use', id: 'sevt_9' }, // no evaluated_permission
+      idle('requires_action'),
+      msg('Done without the tool.'),
+      idle(),
+    ]);
+    expect(reactions).toEqual([{ kind: 'deny_tool', toolUseId: 'sevt_9' }]);
+    expect(state.done).toBe(true);
+    expect(state.reply).toBe('Done without the tool.');
+  });
+
+  it('fails fast when the session waits on something it cannot provide', () => {
+    const { state } = run([idle('requires_action'), msg('never')]);
+    expect(state.done).toBe(true);
+    expect(state.error).toMatch(/approval/);
+    expect(state.reply).toBe('');
+  });
+
+  it('gives up on the second consecutive requires_action after reacting', () => {
+    const { state, reactions } = run([
+      { type: 'agent.tool_use', id: 'sevt_10', evaluated_permission: 'ask' },
+      idle('requires_action'), // consumed by the queued deny
+      idle('requires_action'), // deny did not satisfy it — stop, don't spin
+    ]);
+    expect(reactions).toEqual([{ kind: 'deny_tool', toolUseId: 'sevt_10' }]);
+    expect(state.done).toBe(true);
+    expect(state.error).toMatch(/approval/);
+  });
 });

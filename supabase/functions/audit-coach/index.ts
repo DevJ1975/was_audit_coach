@@ -136,7 +136,9 @@ Deno.serve(async (req: Request) => {
       const session = await anthropic.beta.sessions.create({
         agent: agentId,
         environment_id: environmentId,
-        title: `Audit Coach — ${auditId || user.email || user.id}`,
+        // No email in the title — it shows in the Console session list; the
+        // user binding lives in metadata.user_id.
+        title: `Audit Coach — ${auditId || user.id}`,
         metadata,
       });
       sessionId = session.id;
@@ -170,32 +172,36 @@ Deno.serve(async (req: Request) => {
     const consume = (async () => {
       for await (const event of stream) {
         for (const r of reduceTurnEvent(state, event)) {
-          if (r.kind === 'deny_tool') {
-            await anthropic.beta.sessions.events.send(sessionId, {
-              events: [
-                {
-                  type: 'user.tool_confirmation',
-                  tool_use_id: r.toolUseId,
-                  result: 'deny',
-                  deny_message:
-                    'This chat surface cannot approve tool use — answer from what you already know.',
-                },
-              ],
-            });
-          } else if (r.kind === 'fail_custom_tool') {
-            await anthropic.beta.sessions.events.send(sessionId, {
-              events: [
-                {
-                  type: 'user.custom_tool_result',
-                  custom_tool_use_id: r.customToolUseId,
-                  content: [
-                    { type: 'text', text: 'Not available inside Soteria Audit — continue without it.' },
-                  ],
-                  is_error: true,
-                },
-              ],
-            });
-          }
+          // Best-effort: fallback denials can target ids the session is not
+          // actually waiting on — a rejected send must not fail the turn.
+          try {
+            if (r.kind === 'deny_tool') {
+              await anthropic.beta.sessions.events.send(sessionId, {
+                events: [
+                  {
+                    type: 'user.tool_confirmation',
+                    tool_use_id: r.toolUseId,
+                    result: 'deny',
+                    deny_message:
+                      'This chat surface cannot approve tool use — answer from what you already know.',
+                  },
+                ],
+              });
+            } else if (r.kind === 'fail_custom_tool') {
+              await anthropic.beta.sessions.events.send(sessionId, {
+                events: [
+                  {
+                    type: 'user.custom_tool_result',
+                    custom_tool_use_id: r.customToolUseId,
+                    content: [
+                      { type: 'text', text: 'Not available inside Soteria Audit — continue without it.' },
+                    ],
+                    is_error: true,
+                  },
+                ],
+              });
+            }
+          } catch { /* stale/duplicate confirmation — the idle handler converges */ }
         }
         if (state.done) break;
       }
