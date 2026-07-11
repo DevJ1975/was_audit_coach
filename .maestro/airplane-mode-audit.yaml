@@ -4,7 +4,7 @@
 # evidence → KILL → relaunch and confirm every piece SURVIVED, with zero
 # connectivity. Rows expose testIDs (section-row / item-row) so selection is
 # stable; the item-card assertions are mandatory so a broken flow fails loudly.
-appId: com.trainovate.soteriaaudit
+appId: com.trainovate.wlsauditcoach
 ---
 - launchApp:
     clearState: true
