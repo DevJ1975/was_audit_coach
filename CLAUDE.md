@@ -3,7 +3,9 @@
 Offline-first EHS audit platform. **React Native + Expo** (iOS · Android · Web/PWA) ·
 Supabase (Postgres/Auth/Storage/Edge Functions) · SQLite on-device for offline.
 
-Full plan of record: `SOTERIA_AUDIT_PHASE_PLAN.md`. Owner: Jamil Jones, Trainovate Technologies.
+Full plan of record: `SOTERIA_AUDIT_PHASE_PLAN.md` (kept by the owner outside this
+repo; decisions that land are recorded here and in PR descriptions). Owner: Jamil
+Jones, Trainovate Technologies.
 
 ## NON-NEGOTIABLES (enforce in every phase)
 

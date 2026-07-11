@@ -8,7 +8,8 @@ import { Screen, Card, Button, Title, Subtitle, Body, Mono } from '@/components/
 import { SifBadge, PrivilegeBanner } from '@/components/badges';
 import { useAuditData } from '@/hooks/useAudit';
 import { useRepo, useSession } from '@/db/RepoProvider';
-import { buildReportModel, renderReportHtml } from '@/domain/report';
+import { buildReportModel, renderReportHtml, type ReportEvidence } from '@/domain/report';
+import { readAsDataUri } from '@/attachments/capture';
 import { libraryByCode, sectionNames } from '@/seed';
 import { FINDING_RATINGS, type Rating } from '@soteria/scoring-engine';
 import { ratingColors, text as textTokens, surfaces } from '@/theme/tokens';
@@ -26,7 +27,31 @@ export default function ReportScreen(): React.ReactElement {
     setExporting(true);
     try {
       const model = buildReportModel(audit, items, libraryByCode, sectionNames, new Date().toLocaleString());
-      const html = renderReportHtml(model); // carries the watermark when privileged
+      // Embed per-finding evidence: up to 3 local photos each (data URIs) plus
+      // voice transcriptions; cloud-only or unreadable items are counted, not
+      // silently dropped. Failures never block the export.
+      const MAX_PHOTOS = 3;
+      const evidence: ReportEvidence = {};
+      for (const f of model.findings) {
+        const atts = await repo.listAttachments(f.audit_item_id);
+        if (atts.length === 0) continue;
+        const photos: string[] = [];
+        const transcriptions: string[] = [];
+        let unembedded = 0;
+        for (const a of atts) {
+          if (a.kind === 'photo' && photos.length < MAX_PHOTOS && a.uri) {
+            const dataUri = await readAsDataUri(a.uri);
+            if (dataUri) photos.push(dataUri);
+            else unembedded++;
+          } else if (a.kind === 'voice' && a.transcription) {
+            transcriptions.push(a.transcription);
+          } else {
+            unembedded++;
+          }
+        }
+        evidence[f.audit_item_id] = { photos, transcriptions, unembedded };
+      }
+      const html = renderReportHtml(model, evidence); // carries the watermark when privileged
       await repo.logDisclosure({ org_id: audit.org_id, audit_id: audit.id, actor_id: session.user_id, action: 'export' });
       if (Platform.OS === 'web') {
         await Print.printAsync({ html }); // browser print → Save as PDF

@@ -231,32 +231,47 @@ Deno.serve(async (req: Request) => {
         });
       } catch { /* session may already be idle */ }
       if (!state.reply) {
+        await logUsage();
         return json({ error: 'The coach is taking too long — try again.', session_id: sessionId }, 504);
       }
     }
   } catch (e) {
+    await logUsage();
     return json(
       { error: `Coach request failed: ${e instanceof Error ? e.message : String(e)}` },
       502,
     );
   }
 
-  if (state.error && !state.reply) return json({ error: state.error, session_id: sessionId }, 502);
+  if (state.error && !state.reply) {
+    await logUsage();
+    return json({ error: state.error, session_id: sessionId }, 502);
+  }
   if (!state.reply) {
+    await logUsage();
     return json({ error: 'No answer produced — try rephrasing.', session_id: sessionId }, 502);
   }
 
-  // Per-org usage metering (best-effort; never blocks the response).
-  if (org_id) {
-    await supabase.from('ai_usage').insert({
-      org_id,
-      user_id: user.id,
-      kind: 'audit_coach',
-      model,
-      input_tokens: state.inputTokens,
-      output_tokens: state.outputTokens,
-    });
-  }
+  await logUsage();
 
   return json({ text: state.reply, session_id: sessionId });
+
+  // Per-org usage metering. Failed/timed-out turns still consumed managed-
+  // agent tokens, so every post-turn exit logs. Best-effort, never blocking.
+  async function logUsage(): Promise<void> {
+    if (!org_id || (state.inputTokens === 0 && state.outputTokens === 0)) return;
+    try {
+      const { error } = await supabase.from('ai_usage').insert({
+        org_id,
+        user_id: user.id,
+        kind: 'audit_coach',
+        model,
+        input_tokens: state.inputTokens,
+        output_tokens: state.outputTokens,
+      });
+      if (error) console.error('ai_usage insert failed:', error.message);
+    } catch (e) {
+      console.error('ai_usage insert threw:', e instanceof Error ? e.message : String(e));
+    }
+  }
 });

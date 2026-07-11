@@ -181,6 +181,33 @@ export function createSqliteRepo(db: DB): Repo {
       await db.runAsync('UPDATE audits SET status = ?, updated_at = ? WHERE id = ?', [status, nowIso(), id]);
     },
 
+    async deleteAudit(id) {
+      const uriRows = await db.getAllAsync<{ uri: string }>(
+        `SELECT a.uri FROM attachments a JOIN audit_items i ON i.id = a.audit_item_id
+          WHERE i.audit_id = ? AND a.uri != ''`, [id],
+      );
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(
+          'DELETE FROM attachments WHERE audit_item_id IN (SELECT id FROM audit_items WHERE audit_id = ?)', [id],
+        );
+        await db.runAsync('DELETE FROM audit_item_events WHERE audit_id = ?', [id]);
+        await db.runAsync('DELETE FROM corrective_actions WHERE audit_id = ?', [id]);
+        await db.runAsync('DELETE FROM disclosure_log WHERE audit_id = ?', [id]);
+        await db.runAsync('DELETE FROM audit_items WHERE audit_id = ?', [id]);
+        await db.runAsync('DELETE FROM scoping_answers WHERE audit_id = ?', [id]);
+        await db.runAsync('DELETE FROM audits WHERE id = ?', [id]);
+      });
+      return { evidenceUris: uriRows.map((r) => r.uri) };
+    },
+
+    async listAuditAttachments(audit_id) {
+      const rows = await db.getAllAsync<AttachmentRow>(
+        `SELECT a.* FROM attachments a JOIN audit_items i ON i.id = a.audit_item_id
+          WHERE i.audit_id = ? ORDER BY a.created_at`, [audit_id],
+      );
+      return rows.map(toAttachment);
+    },
+
     async getScopingAnswers(audit_id) {
       const rows = await db.getAllAsync<{ audit_id: string; org_id: string; question_key: string; answer: number }>(
         'SELECT * FROM scoping_answers WHERE audit_id = ?', [audit_id],

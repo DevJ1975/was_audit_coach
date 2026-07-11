@@ -117,6 +117,29 @@ export async function loadForUpload(uri: string): Promise<EvidenceBlob> {
   return { data: base64ToBytes(b64), contentType: contentTypeFor(uri) };
 }
 
+/**
+ * Read a local evidence file as a data: URI (for embedding photos in the PDF
+ * report). Platform-aware like loadForUpload; null on any failure — a photo
+ * that can't be read just doesn't appear in the export, never a blocked report.
+ */
+export async function readAsDataUri(uri: string): Promise<string | null> {
+  try {
+    if (Platform.OS === 'web') {
+      const blob = await (await fetch(uri)).blob();
+      return await new Promise<string | null>((resolve) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(typeof fr.result === 'string' ? fr.result : null);
+        fr.onerror = () => resolve(null);
+        fr.readAsDataURL(blob);
+      });
+    }
+    const b64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    return `data:${contentTypeFor(uri)};base64,${b64}`;
+  } catch {
+    return null;
+  }
+}
+
 /** Best-effort delete of a persisted evidence file when its attachment is removed. */
 export async function deleteEvidenceFile(uri: string): Promise<void> {
   if (Platform.OS === 'web' || !EVIDENCE_DIR || !uri.startsWith(EVIDENCE_DIR)) return;
