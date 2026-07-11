@@ -19,7 +19,8 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Mono } from '@/components/ui';
-import { askSoteria, isAiConfigured, type ChatTurn, type SoteriaCitation } from '@/ai/chat';
+import { askSoteria, type ChatTurn, type SoteriaCitation } from '@/ai/chat';
+import { useAiReady, aiHintText } from '@/hooks/useAiReady';
 import { brand, layout, surfaces, text as textTokens, semantic } from '@/theme/tokens';
 
 interface Message extends ChatTurn {
@@ -57,7 +58,8 @@ function CitationCard({ c }: { c: SoteriaCitation }): React.ReactElement {
 
 export default function ChatScreen(): React.ReactElement {
   const { seed, jurisdiction } = useLocalSearchParams<{ seed?: string; jurisdiction?: string }>();
-  const aiOn = isAiConfigured();
+  const aiGate = useAiReady();
+  const aiOn = aiGate.ready;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(seed ?? '');
@@ -165,8 +167,9 @@ export default function ChatScreen(): React.ReactElement {
 
         {!aiOn ? (
           <Text style={styles.offline}>
-            Soteria connects when the app is online and signed in. Your audit keeps working
-            offline as always.
+            {aiGate.reason === 'signin'
+              ? 'Sign in (top right of the home screen) to ask Soteria. Your audit keeps working offline as always.'
+              : 'Soteria connects when the app is online and signed in. Your audit keeps working offline as always.'}
           </Text>
         ) : null}
 
