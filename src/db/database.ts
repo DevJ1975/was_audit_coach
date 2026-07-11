@@ -71,11 +71,9 @@ interface WebLockManager {
 
 let tabLockHeld = false;
 
-async function ensureSoleTabOwner(): Promise<void> {
-  if (Platform.OS !== 'web' || tabLockHeld) return;
-  const locks = (globalThis as { navigator?: { locks?: WebLockManager } }).navigator?.locks;
-  if (!locks) return; // no Web Locks API — fall through to the driver's own error
-  const outcome = await new Promise<'acquired' | 'blocked' | 'error'>((resolve) => {
+/** One ifAvailable grab of the tab lock. */
+function tryAcquireTabLock(locks: WebLockManager): Promise<'acquired' | 'blocked' | 'error'> {
+  return new Promise((resolve) => {
     locks
       .request(TAB_LOCK_NAME, { ifAvailable: true }, (lock) => {
         resolve(lock !== null ? 'acquired' : 'blocked');
@@ -85,6 +83,20 @@ async function ensureSoleTabOwner(): Promise<void> {
       })
       .catch(() => resolve('error')); // lock machinery failed — let the open proceed
   });
+}
+
+async function ensureSoleTabOwner(): Promise<void> {
+  if (Platform.OS !== 'web' || tabLockHeld) return;
+  const locks = (globalThis as { navigator?: { locks?: WebLockManager } }).navigator?.locks;
+  if (!locks) return; // no Web Locks API — fall through to the driver's own error
+  // On a fast reload the OLD page's lock can outlive the navigation by a
+  // moment — retry briefly before declaring a second tab, or a plain refresh
+  // intermittently shows the multi-tab error for a lock nobody holds anymore.
+  let outcome = await tryAcquireTabLock(locks);
+  for (let attempt = 0; outcome === 'blocked' && attempt < 4; attempt++) {
+    await new Promise((r) => setTimeout(r, 350));
+    outcome = await tryAcquireTabLock(locks);
+  }
   if (outcome === 'blocked') throw new Error(MULTI_TAB_MESSAGE);
   if (outcome === 'acquired') tabLockHeld = true;
 }
