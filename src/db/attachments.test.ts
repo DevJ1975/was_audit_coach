@@ -54,3 +54,47 @@ describe('attachment writes go through the repo and log immutable events (NN #6)
     expect(events.some((e) => e.type === 'attachment_removed' && e.payload.attachment_id === att.id)).toBe(true);
   });
 });
+
+describe('attachment upload state drives sync behind the seam', () => {
+  it('a fresh attachment is pending upload, then marking synced clears it and records the path', async () => {
+    const { repo, itemId } = await firstItem();
+    const att = await repo.addAttachment(itemId, 'photo', 'file:///p.jpg', 'u');
+    expect(att.sync_state).toBe('local');
+    expect(att.storage_path).toBeNull();
+
+    expect((await repo.listPendingUploads()).map((a) => a.id)).toEqual([att.id]);
+
+    await repo.markAttachmentSynced(att.id, 'wls/item/att.jpg');
+    expect(await repo.listPendingUploads()).toEqual([]);
+    const [row] = await repo.listAttachments(itemId);
+    expect(row?.sync_state).toBe('synced');
+    expect(row?.storage_path).toBe('wls/item/att.jpg');
+  });
+
+  it('removing a never-uploaded attachment deletes it outright (no remote copy to clean)', async () => {
+    const { repo, itemId } = await firstItem();
+    const att = await repo.addAttachment(itemId, 'photo', 'file:///p.jpg', 'u');
+    await repo.removeAttachment(att.id, 'u');
+    expect(await repo.listPendingRemovals()).toEqual([]); // nothing to propagate
+  });
+
+  it('removing a synced attachment tombstones it: hidden from lists, queued for remote deletion, then purged', async () => {
+    const { repo, itemId } = await firstItem();
+    const att = await repo.addAttachment(itemId, 'photo', 'file:///p.jpg', 'u');
+    await repo.markAttachmentSynced(att.id, 'wls/item/att.jpg');
+
+    await repo.removeAttachment(att.id, 'u');
+    expect(await repo.listAttachments(itemId)).toEqual([]); // gone from the UI immediately
+    expect(await repo.listPendingUploads()).toEqual([]);    // not re-uploaded
+
+    const pending = await repo.listPendingRemovals();
+    expect(pending.map((a) => a.id)).toEqual([att.id]);
+    expect(pending[0]?.storage_path).toBe('wls/item/att.jpg'); // path retained for Storage delete
+    expect(await repo.listEvents(itemId)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'attachment_removed' })]),
+    );
+
+    await repo.purgeAttachment(att.id);
+    expect(await repo.listPendingRemovals()).toEqual([]);
+  });
+});

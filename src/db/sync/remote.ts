@@ -31,6 +31,43 @@ export interface RemoteAudit {
   updated_at: string;
 }
 
+/** Bytes + content type ready to PUT into Storage (produced by capture.ts). */
+export interface EvidenceBlob {
+  data: ArrayBuffer | Uint8Array | Blob;
+  contentType: string;
+}
+
+/** An attachment metadata row as it lives on the server (path, not local uri). */
+export interface RemoteAttachment {
+  id: string;
+  org_id: string;
+  audit_item_id: string;
+  kind: string;
+  storage_path: string;
+  transcription: string | null;
+  created_at: string;
+}
+
+/**
+ * EvidenceRemote — the Storage + attachment-metadata transport, kept separate
+ * from RemoteAdapter so the CI-tested audit-item sync core is untouched. Every
+ * call is tenant-scoped by RLS: the object path is prefixed with org_id and the
+ * `evidence` bucket policy checks it against the caller's JWT org.
+ */
+export interface EvidenceRemote {
+  isAvailable(): boolean;
+  /** PUT the bytes at `path` (upsert — safe to retry a half-finished upload). */
+  uploadEvidence(path: string, blob: EvidenceBlob): Promise<void>;
+  /** Upsert attachment metadata rows (id-idempotent). */
+  upsertAttachments(rows: RemoteAttachment[]): Promise<void>;
+  /** Delete Storage objects by path (best-effort; missing objects are fine). */
+  deleteEvidence(paths: string[]): Promise<void>;
+  /** Delete attachment metadata rows by id. */
+  deleteAttachments(ids: string[]): Promise<void>;
+  /** A time-limited signed URL for viewing a private object, or null. */
+  createSignedUrl(path: string, expiresInSec: number): Promise<string | null>;
+}
+
 export interface RemoteAdapter {
   /** True when a backend is configured and a session exists. */
   isAvailable(): boolean;

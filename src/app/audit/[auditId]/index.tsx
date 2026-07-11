@@ -14,7 +14,7 @@ export default function SectionListScreen(): React.ReactElement {
   const { auditId } = useLocalSearchParams<{ auditId: string }>();
   const router = useRouter();
   const { audit, score, findings } = useAuditData(auditId);
-  const { sync, syncing, summary, available } = useSync(auditId);
+  const { sync, syncing, summary, evidence, available } = useSync(auditId);
 
   const activeSections = sectionOrder.filter((code) => score.sections[code]);
 
@@ -53,6 +53,8 @@ export default function SectionListScreen(): React.ReactElement {
           <Text style={styles.syncNote}>
             Synced · {summary.pushed} pushed · {summary.appliedLocal} applied
             {summary.conflicts.length ? ` · ${summary.conflicts.length} need resolution` : ''}
+            {evidence && evidence.uploaded ? ` · ${evidence.uploaded} evidence uploaded` : ''}
+            {evidence && evidence.failed ? ` · ${evidence.failed} evidence pending` : ''}
           </Text>
         ) : null}
       </Card>

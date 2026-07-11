@@ -6,19 +6,21 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRepo } from '@/db/RepoProvider';
 import { createSync } from '@/db/sync';
-import type { SyncSummary } from '@/db/sync';
+import type { SyncSummary, AttachmentSyncSummary } from '@/db/sync';
 
 export function useSync(auditId: string): {
   sync: () => Promise<void>;
   syncing: boolean;
   summary: SyncSummary | null;
+  evidence: AttachmentSyncSummary | null;
   available: boolean;
 } {
   const repo = useRepo();
   // One engine per repo instance so the pull cursor persists across the session.
-  const { engine, remote } = useMemo(() => createSync(repo), [repo]);
+  const { engine, remote, attachments } = useMemo(() => createSync(repo), [repo]);
   const [syncing, setSyncing] = useState(false);
   const [summary, setSummary] = useState<SyncSummary | null>(null);
+  const [evidence, setEvidence] = useState<AttachmentSyncSummary | null>(null);
   const available = remote.isAvailable();
 
   const sync = useCallback(async () => {
@@ -35,10 +37,13 @@ export function useSync(auditId: string): {
         });
       }
       setSummary(await engine.syncAudit(auditId));
+      // Flush any captured evidence to Storage (global: pending files from any
+      // audit go up whenever the auditor lands online and taps Sync).
+      setEvidence(await attachments.syncAttachments());
     } finally {
       setSyncing(false);
     }
-  }, [available, syncing, repo, engine, remote, auditId]);
+  }, [available, syncing, repo, engine, remote, attachments, auditId]);
 
-  return { sync, syncing, summary, available };
+  return { sync, syncing, summary, evidence, available };
 }

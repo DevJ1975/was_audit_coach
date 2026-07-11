@@ -11,7 +11,7 @@ import * as SQLite from 'expo-sqlite';
 export type DB = SQLite.SQLiteDatabase;
 
 const DB_NAME = 'soteria.db';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 let dbPromise: Promise<DB> | null = null;
 
@@ -33,7 +33,8 @@ async function migrate(db: DB): Promise<void> {
   const current = row?.user_version ?? 0;
   if (current >= SCHEMA_VERSION) return;
 
-  await db.execAsync(`
+  // v1 — baseline schema (tenant/audit state; the library is bundled JSON).
+  if (current < 1) await db.execAsync(`
     CREATE TABLE IF NOT EXISTS audits (
       id TEXT PRIMARY KEY NOT NULL,
       org_id TEXT NOT NULL,
@@ -124,9 +125,22 @@ async function migrate(db: DB): Promise<void> {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_disclosure_audit ON disclosure_log(audit_id);
-
-    PRAGMA user_version = ${SCHEMA_VERSION};
   `);
+
+  // v2 — evidence upload sync. Track the Storage object path + upload state, and
+  // a removal tombstone, on attachments. Added via ALTER (not baked into the v1
+  // CREATE) so a device already on v1 converges to the same shape as a fresh
+  // install. Existing local rows default to 'local' = pending upload, which is
+  // exactly right: they were captured offline and never reached Storage.
+  if (current < 2) {
+    await db.execAsync(`
+      ALTER TABLE attachments ADD COLUMN storage_path TEXT;
+      ALTER TABLE attachments ADD COLUMN sync_state TEXT NOT NULL DEFAULT 'local';
+      ALTER TABLE attachments ADD COLUMN deleted_at TEXT;
+    `);
+  }
+
+  await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
 }
 
 /** Test/dev helper — drop everything (never call in production flows). */

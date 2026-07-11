@@ -64,6 +64,20 @@ function toItem(r: ItemRow): AuditItem {
   };
 }
 
+interface AttachmentRow {
+  id: string; org_id: string; audit_item_id: string; kind: string; uri: string;
+  storage_path: string | null; sync_state: string; deleted_at: string | null;
+  transcription: string | null; created_at: string;
+}
+function toAttachment(r: AttachmentRow): Attachment {
+  return {
+    id: r.id, org_id: r.org_id, audit_item_id: r.audit_item_id,
+    kind: r.kind as AttachmentKind, uri: r.uri,
+    storage_path: r.storage_path, sync_state: r.sync_state as Attachment['sync_state'],
+    deleted_at: r.deleted_at, transcription: r.transcription, created_at: r.created_at,
+  };
+}
+
 interface EventRow {
   id: string; org_id: string; audit_id: string; audit_item_id: string;
   type: string; payload: string; actor_id: string; created_at: string;
@@ -253,12 +267,15 @@ export function createSqliteRepo(db: DB): Repo {
       const item = await requireItem(audit_item_id);
       const att: Attachment = {
         id: newId(), org_id: item.org_id, audit_item_id, kind, uri,
+        storage_path: null, sync_state: 'local', deleted_at: null,
         transcription: transcription ?? null, created_at: nowIso(),
       };
       await db.withTransactionAsync(async () => {
         await db.runAsync(
-          `INSERT INTO attachments (id, org_id, audit_item_id, kind, uri, transcription, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [att.id, att.org_id, att.audit_item_id, att.kind, att.uri, att.transcription, att.created_at],
+          `INSERT INTO attachments (id, org_id, audit_item_id, kind, uri, storage_path, sync_state, deleted_at, transcription, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [att.id, att.org_id, att.audit_item_id, att.kind, att.uri,
+           att.storage_path, att.sync_state, att.deleted_at, att.transcription, att.created_at],
         );
         await insertEvent(item, 'attachment_added', { attachment_id: att.id, kind }, actor_id);
       });
@@ -266,22 +283,52 @@ export function createSqliteRepo(db: DB): Repo {
     },
 
     async removeAttachment(attachment_id, actor_id) {
-      const att = await db.getFirstAsync<{ audit_item_id: string; org_id: string; kind: string }>(
-        'SELECT audit_item_id, org_id, kind FROM attachments WHERE id = ?', [attachment_id],
+      const att = await db.getFirstAsync<{ audit_item_id: string; kind: string; sync_state: string; deleted_at: string | null }>(
+        'SELECT audit_item_id, kind, sync_state, deleted_at FROM attachments WHERE id = ?', [attachment_id],
       );
-      if (!att) return;
+      if (!att || att.deleted_at) return;
       const item = await db.getFirstAsync<ItemRow>('SELECT * FROM audit_items WHERE id = ?', [att.audit_item_id]);
       await db.withTransactionAsync(async () => {
-        await db.runAsync('DELETE FROM attachments WHERE id = ?', [attachment_id]);
+        // Synced rows tombstone (the upload pass deletes the Storage object +
+        // server row, then purges); never-uploaded rows have no remote copy.
+        if (att.sync_state === 'synced') {
+          await db.runAsync('UPDATE attachments SET deleted_at = ? WHERE id = ?', [nowIso(), attachment_id]);
+        } else {
+          await db.runAsync('DELETE FROM attachments WHERE id = ?', [attachment_id]);
+        }
         if (item) await insertEvent(toItem(item), 'attachment_removed', { attachment_id, kind: att.kind }, actor_id);
       });
     },
 
     async listAttachments(audit_item_id) {
-      const rows = await db.getAllAsync<Attachment & { transcription: string | null }>(
-        'SELECT * FROM attachments WHERE audit_item_id = ? ORDER BY created_at', [audit_item_id],
+      const rows = await db.getAllAsync<AttachmentRow>(
+        'SELECT * FROM attachments WHERE audit_item_id = ? AND deleted_at IS NULL ORDER BY created_at', [audit_item_id],
       );
-      return rows.map((r) => ({ ...r, kind: r.kind as AttachmentKind }));
+      return rows.map(toAttachment);
+    },
+
+    async listPendingUploads() {
+      const rows = await db.getAllAsync<AttachmentRow>(
+        "SELECT * FROM attachments WHERE sync_state = 'local' AND deleted_at IS NULL ORDER BY created_at",
+      );
+      return rows.map(toAttachment);
+    },
+
+    async markAttachmentSynced(attachment_id, storage_path) {
+      await db.runAsync(
+        "UPDATE attachments SET sync_state = 'synced', storage_path = ? WHERE id = ?", [storage_path, attachment_id],
+      );
+    },
+
+    async listPendingRemovals() {
+      const rows = await db.getAllAsync<AttachmentRow>(
+        'SELECT * FROM attachments WHERE deleted_at IS NOT NULL ORDER BY created_at',
+      );
+      return rows.map(toAttachment);
+    },
+
+    async purgeAttachment(attachment_id) {
+      await db.runAsync('DELETE FROM attachments WHERE id = ?', [attachment_id]);
     },
 
     async listCorrectiveActions(audit_id) {

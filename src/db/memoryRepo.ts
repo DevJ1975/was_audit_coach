@@ -202,6 +202,9 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
         audit_item_id,
         kind,
         uri,
+        storage_path: null,
+        sync_state: 'local',
+        deleted_at: null,
         transcription: transcription ?? null,
         created_at: deps.now(),
       };
@@ -212,14 +215,38 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
 
     async removeAttachment(attachment_id, actor_id) {
       const att = attachments.get(attachment_id);
-      if (!att) return;
-      attachments.delete(attachment_id);
+      if (!att || att.deleted_at) return;
+      // A synced row is tombstoned so its Storage object + server row can be
+      // deleted before the local row is purged; a never-uploaded row has no
+      // remote copy, so it goes immediately.
+      if (att.sync_state === 'synced') {
+        attachments.set(attachment_id, { ...att, deleted_at: deps.now() });
+      } else {
+        attachments.delete(attachment_id);
+      }
       const it = items.get(att.audit_item_id);
       if (it) appendEvent(it, 'attachment_removed', { attachment_id, kind: att.kind }, actor_id);
     },
 
     async listAttachments(audit_item_id) {
-      return [...attachments.values()].filter((a) => a.audit_item_id === audit_item_id);
+      return [...attachments.values()].filter((a) => a.audit_item_id === audit_item_id && !a.deleted_at);
+    },
+
+    async listPendingUploads() {
+      return [...attachments.values()].filter((a) => a.sync_state === 'local' && !a.deleted_at);
+    },
+
+    async markAttachmentSynced(attachment_id, storage_path) {
+      const att = attachments.get(attachment_id);
+      if (att) attachments.set(attachment_id, { ...att, sync_state: 'synced', storage_path });
+    },
+
+    async listPendingRemovals() {
+      return [...attachments.values()].filter((a) => a.deleted_at != null);
+    },
+
+    async purgeAttachment(attachment_id) {
+      attachments.delete(attachment_id);
     },
 
     async listCorrectiveActions(audit_id) {

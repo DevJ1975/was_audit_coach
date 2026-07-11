@@ -92,8 +92,26 @@ export interface Repo {
     actor_id: string,
     transcription?: string | null,
   ): Promise<Attachment>;
+  /**
+   * Remove an attachment. A never-uploaded ('local') row is deleted outright; a
+   * 'synced' row is tombstoned (deleted_at set) so the upload pass can delete the
+   * Storage object + server row before the local row is purged. Either way an
+   * immutable `attachment_removed` event is appended (NN #6) and the row stops
+   * appearing in listAttachments immediately (offline-first — no network wait).
+   */
   removeAttachment(attachment_id: string, actor_id: string): Promise<void>;
+  /** Live (non-tombstoned) attachments for an item, oldest first. */
   listAttachments(audit_item_id: string): Promise<Attachment[]>;
+
+  // --- Attachment sync (Phase 4; driven by AttachmentSync behind the seam) ---
+  /** Captured-but-not-yet-uploaded rows (sync_state 'local', not tombstoned). */
+  listPendingUploads(): Promise<Attachment[]>;
+  /** Mark a row uploaded: record its Storage path and flip it to 'synced'. */
+  markAttachmentSynced(attachment_id: string, storage_path: string): Promise<void>;
+  /** Tombstoned rows whose Storage object + server row still need deleting. */
+  listPendingRemovals(): Promise<Attachment[]>;
+  /** Hard-delete a tombstoned row once its remote copies are gone. */
+  purgeAttachment(attachment_id: string): Promise<void>;
 
   // --- Corrective actions (auto-populated from findings) --------------------
   listCorrectiveActions(audit_id: string): Promise<CorrectiveAction[]>;
