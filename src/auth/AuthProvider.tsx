@@ -36,6 +36,17 @@ interface AuthContextValue {
    */
   claimsOk: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  /**
+   * Create an account. Server-side trigger provisions the tenant: an invited
+   * email joins the inviting org; otherwise a new org named `orgName` is
+   * created with this user as its admin. Returns needsConfirmation when email
+   * confirmation is required before the first sign-in.
+   */
+  signUp: (
+    email: string,
+    password: string,
+    orgName: string,
+  ) => Promise<{ error: string | null; needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
 }
 
@@ -89,6 +100,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
         if (!supabase) return { error: 'Backend not configured on this build.' };
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         return { error: error?.message ?? null };
+      },
+      async signUp(email, password, orgName) {
+        const supabase = getSupabase();
+        if (!supabase) return { error: 'Backend not configured on this build.', needsConfirmation: false };
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          // org_name rides user metadata into the provisioning trigger.
+          options: { data: { org_name: orgName.trim() } },
+        });
+        if (error) return { error: error.message, needsConfirmation: false };
+        // Session present = confirmation off, signed in immediately.
+        return { error: null, needsConfirmation: !data.session };
       },
       async signOut() {
         await getSupabase()?.auth.signOut();
