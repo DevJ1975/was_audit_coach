@@ -1,0 +1,36 @@
+{
+  "_comment": "The workbook's real pilot data for the Confined Space section. This is the SACRED validation case (§1.2 of the phase plan). It MUST produce score 98.6 · effective max 160 · 61.625% · tier Bronze. Any engine change that breaks this is wrong by definition. This fixture holds pilot RATINGS only — never merge it into the clean item library.",
+  "expected": {
+    "rawScore": 98.6,
+    "effectiveMax": 160,
+    "percent": 61.625,
+    "tier": "Bronze"
+  },
+  "section": "CS",
+  "items": [
+    { "item_code": "CS-1", "max_points": 10, "rating": "Not Applicable" },
+    { "item_code": "CS-2", "max_points": 8, "rating": "Low" },
+    { "item_code": "CS-3", "max_points": 6, "rating": "Very High" },
+    { "item_code": "CS-4", "max_points": 8, "rating": "Not Applicable" },
+    { "item_code": "CS-5", "max_points": 10, "rating": "Low" },
+    { "item_code": "CS-6", "max_points": 10, "rating": "High" },
+    { "item_code": "CS-7", "max_points": 10, "rating": "Moderate" },
+    { "item_code": "CS-8", "max_points": 10, "rating": "Very High" },
+    { "item_code": "CS-9", "max_points": 6, "rating": "Best Practice" },
+    { "item_code": "CS-10", "max_points": 6, "rating": "Verified" },
+    { "item_code": "CS-11", "max_points": 6, "rating": "Low" },
+    { "item_code": "CS-12", "max_points": 10, "rating": "Moderate" },
+    { "item_code": "CS-13", "max_points": 8, "rating": "High" },
+    { "item_code": "CS-14", "max_points": 6, "rating": "Very High" },
+    { "item_code": "CS-15", "max_points": 6, "rating": "Not Applicable" },
+    { "item_code": "CS-16", "max_points": 10, "rating": "Best Practice" },
+    { "item_code": "CS-17", "max_points": 8, "rating": "Verified" },
+    { "item_code": "CS-18", "max_points": 8, "rating": "Low" },
+    { "item_code": "CS-19", "max_points": 8, "rating": "Moderate" },
+    { "item_code": "CS-20", "max_points": 8, "rating": "High" },
+    { "item_code": "CS-21", "max_points": 8, "rating": "Very High" },
+    { "item_code": "CS-22", "max_points": 8, "rating": "Not Applicable" },
+    { "item_code": "CS-23", "max_points": 6, "rating": "Best Practice" },
+    { "item_code": "CS-24", "max_points": 8, "rating": "Verified" }
+  ]
+}

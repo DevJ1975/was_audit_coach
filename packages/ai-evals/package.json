@@ -1,0 +1,7 @@
+{
+  "name": "@soteria/ai-evals",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Golden-set evals for Soteria AI drafts: citation fidelity, no invented regulations, length bounds, and a static no-AI-sets-rating guard. Runs in CI via npm test.",
+  "type": "module"
+}

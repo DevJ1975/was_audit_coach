@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Scoring parity is sacred — the §1.2 validation case (98.6/160/61.625%/Bronze)
+      # must be green on every commit. This gate is Non-Negotiable #1.
+      - name: Scoring + domain tests
+        run: npm test
+      - name: Typecheck (strict)
+        run: npm run typecheck

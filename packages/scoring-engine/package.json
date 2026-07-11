@@ -1,0 +1,11 @@
+{
+  "name": "@soteria/scoring-engine",
+  "version": "1.0.0",
+  "description": "Pure-TS scoring engine for Soteria Audit. 1:1 port of the WLS workbook math. DO NOT 'improve' — the §1.2 validation case is CI-enforced.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run"
+  }
+}

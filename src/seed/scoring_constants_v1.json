@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "_comment": "Expert-calibrated scoring constants extracted from WLS_Audit_Coach_OSHA.xlsx. Mirror of packages/scoring-engine/src/constants.ts. The engine is the source of truth for math; this JSON is for the seed loader / reference.",
+  "ratings": [
+    "Best Practice",
+    "Verified",
+    "Low",
+    "Moderate",
+    "High",
+    "Very High",
+    "Not Applicable"
+  ],
+  "multipliers": {
+    "Best Practice": 1.0,
+    "Verified": 1.0,
+    "Low": 0.85,
+    "Moderate": 0.7,
+    "High": 0.3,
+    "Very High": 0.0,
+    "Not Applicable": null
+  },
+  "findingRatings": ["Low", "Moderate", "High", "Very High"],
+  "severityOrder": { "Very High": 4, "High": 3, "Moderate": 2, "Low": 1 },
+  "tiers": [
+    { "min": 0.99, "tier": "Excellence Leader" },
+    { "min": 0.9, "tier": "Gold" },
+    { "min": 0.8, "tier": "Silver" },
+    { "min": 0.51, "tier": "Bronze" },
+    { "min": 0.0, "tier": "Developing" }
+  ],
+  "maxPointsDistribution": { "6": 73, "8": 120, "10": 62, "mean": 7.53 }
+}

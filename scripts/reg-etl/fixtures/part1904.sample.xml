@@ -1,0 +1,408 @@
+<?xml version="1.0"?>
+<DIV5 N="1904" TYPE="PART" VOLUME="5" hierarchy_metadata="{&amp;quot;path&amp;quot;:&amp;quot;/on/_SUBSTITUTE_DATE_/title-29/part-1904&amp;quot;,&amp;quot;citation&amp;quot;:&amp;quot;29 CFR Part 1904&amp;quot;}">
+<HEAD>PART 1904&#x2014;RECORDING AND REPORTING OCCUPATIONAL INJURIES AND ILLNESSES
+</HEAD>
+<AUTH>
+<HED>Authority:</HED><PSPACE>29 U.S.C. 657, 658, 660, 666, 669, 673, Secretary of Labor's Orders No. 3-2000 (65 FR 50017) and 1-2012 (77 FR 3912), as applicable, and 5 U.S.C. 553.
+</PSPACE></AUTH>
+<SOURCE>
+<HED>Source:</HED><PSPACE>66 FR 6122, Jan. 19, 2001, unless otherwise noted.
+</PSPACE></SOURCE>
+<EDNOTE>
+<HED>Editorial Note:</HED><PSPACE>At 82 FR 20548, May 3, 2017, as required by the Congressional Review Act and Public Law 115-21, the Occupational Safety and Health Administration removed all amendments to part 1904 published at 81 FR 91792, Dec. 19, 2016.</PSPACE></EDNOTE>
+<DIV6 N="A" TYPE="SUBPART" VOLUME="5" hierarchy_metadata="{&amp;quot;path&amp;quot;:&amp;quot;/on/_SUBSTITUTE_DATE_/title-29/part-1904/subpart-A&amp;quot;,&amp;quot;citation&amp;quot;:&amp;quot;29 CFR Part 1904 Subpart A&amp;quot;}">
+<HEAD>Subpart A&#x2014;Purpose</HEAD>
+<DIV8 N="1904.0" TYPE="SECTION" hierarchy_metadata="{&quot;path&quot;:&quot;/on/_SUBSTITUTE_DATE_/title-29/section-1904.0&quot;,&quot;citation&quot;:&quot;29 CFR 1904.0&quot;}">
+<HEAD>&#xA7; 1904.0 Purpose.</HEAD>
+<P>The purpose of this rule (part 1904) is to require employers to record and report work-related fatalities, injuries, and illnesses.</P>
+<NOTE>
+<HED>Note to &#xA7; 1904.0:</HED>
+<P>Recording or reporting a work-related injury, illness, or fatality does not mean that the employer or employee was at fault, that an OSHA rule has been violated, or that the employee is eligible for workers' compensation or other benefits.</P></NOTE>
+<CITA TYPE="N">[82 FR 20548, May 3, 2017]
+</CITA>
+</DIV8>
+
+</DIV6>
+<DIV6 N="B" TYPE="SUBPART" VOLUME="5" hierarchy_metadata="{&amp;quot;path&amp;quot;:&amp;quot;/on/_SUBSTITUTE_DATE_/title-29/part-1904/subpart-B&amp;quot;,&amp;quot;citation&amp;quot;:&amp;quot;29 CFR Part 1904 Subpart B&amp;quot;}">
+<HEAD>Subpart B&#x2014;Scope</HEAD>
+<NOTE>
+<HED>Note to subpart B:</HED>
+<P>All employers covered by the Occupational Safety and Health Act (OSH Act) are covered by these part 1904 regulations. However, most employers do not have to keep OSHA injury and illness records unless OSHA or the Bureau of Labor Statistics (BLS) informs them in writing that they must keep records. For example, employers with 10 or fewer employees and business establishments in certain industry classifications are partially exempt from keeping OSHA injury and illness records.</P></NOTE>
+<DIV8 N="1904.1" TYPE="SECTION" hierarchy_metadata="{&quot;path&quot;:&quot;/on/_SUBSTITUTE_DATE_/title-29/section-1904.1&quot;,&quot;citation&quot;:&quot;29 CFR 1904.1&quot;}">
+<HEAD>&#xA7; 1904.1 Partial exemption for employers with 10 or fewer employees.</HEAD>
+<P>(a) <I>Basic requirement.</I> (1) If your company had 10 or fewer employees at all times during the last calendar year, you do not need to keep OSHA injury and illness records unless OSHA or the Bureau of Labor Statistics informs you in writing that you must keep records under &#xA7; 1904.41 or &#xA7; 1904.42. However, as required by &#xA7; 1904.39, all employers covered by the OSH Act must report to OSHA any work-related incident that results in a fatality, the in-patient hospitalization of one or more employees, an employee amputation, or an employee loss of an eye.</P>
+<P>(2) If your company had more than ten (10) employees at any time during the last calendar year, you must keep OSHA injury and illness records unless your establishment is classified as a partially exempt industry under &#xA7; 1904.2.</P>
+<P>(b) <I>Implementation</I>&#x2014;(1) <I>Is the partial exemption for size based on the size of my entire company or on the size of an individual business establishment?</I> The partial exemption for size is based on the number of employees in the entire company.</P>
+<P>(2) <I>How do I determine the size of my company to find out if I qualify for the partial exemption for size?</I> To determine if you are exempt because of size, you need to determine your company's peak employment during the last calendar year. If you had no more than 10 employees at any time in the last calendar year, your company qualifies for the partial exemption for size.</P>
+<CITA TYPE="N">[66 FR 6122, Jan. 19, 2001, as amended at 85 FR 8731, Feb. 18, 2020]
+</CITA>
+</DIV8>
+
+<DIV8 N="1904.2" TYPE="SECTION" hierarchy_metadata="{&quot;path&quot;:&quot;/on/_SUBSTITUTE_DATE_/title-29/section-1904.2&quot;,&quot;citation&quot;:&quot;29 CFR 1904.2&quot;}">
+<HEAD>&#xA7; 1904.2 Partial exemption for establishments in certain industries.</HEAD>
+<P>(a) <I>Basic requirement.</I> (1) If your business establishment is classified in a specific industry group listed in appendix A to this subpart, you do not need to keep OSHA injury and illness records unless the government asks you to keep the records under &#xA7; 1904.41 or &#xA7; 1904.42. However, all employers must report to OSHA any workplace incident that results in an employee's fatality, in-patient hospitalization, amputation, or loss of an eye (see &#xA7; 1904.39).</P>
+<P>(2) If one or more of your company's establishments are classified in a non-exempt industry, you must keep OSHA injury and illness records for all of such establishments unless your company is partially exempted because of size under &#xA7; 1904.1.</P>
+<P>(b) <I>Implementation</I>&#x2014;(1) <I>Is the partial industry classification exemption based on the industry classification of my entire company or on the classification of individual business establishments operated by my company?</I> The partial industry classification exemption applies to individual business establishments. If a company has several business establishments engaged in different classes of business activities, some of the company's establishments may be required to keep records, while others may be partially exempt.</P>
+<P>(2) <I>How do I determine the correct NAICS code for my company or for individual establishments?</I> You can determine your NAICS code by using one of three methods, or you may contact your nearest OSHA office or State agency for help in determining your NAICS code:</P>
+<P>(i) You can use the search feature at the U.S. Census Bureau NAICS main Web page: <I>http://www.census.gov/eos/www/naics/.</I> In the search box for the most recent NAICS, enter a keyword that describes your kind of business. A list of primary business activities containing that keyword and the corresponding NAICS codes will appear. Choose the one that most closely corresponds to your primary business activity, or refine your search to obtain other choices.</P>
+<P>(ii) Rather than searching through a list of primary business activities, you may also view the most recent complete NAICS structure with codes and titles by clicking on the link for the most recent NAICS on the U.S. Census Bureau NAICS main Web page: <I>http://www.census.gov/eos/www/naics/.</I> Then click on the two-digit Sector code to see all the NAICS codes under that Sector. Then choose the six-digit code of your interest to see the corresponding definition, as well as cross-references and index items, when available.</P>
+<P>(iii) If you know your old SIC code, you can also find the appropriate 2002 NAICS code by using the detailed conversion (concordance) between the 1987 SIC and 2002 NAICS available in Excel format for download at the &#x201C;Concordances&#x201D; link at the U.S. Census Bureau NAICS main Web page: <I>http://www.census.gov/eos/www/naics/.</I></P>
+<CITA TYPE="N">[66 FR 6122, Jan. 19, 2001, as amended at 79 FR 56186, Sept. 18, 2014]
+</CITA>
+</DIV8>
+
+<DIV8 N="1904.3" TYPE="SECTION" hierarchy_metadata="{&quot;path&quot;:&quot;/on/_SUBSTITUTE_DATE_/title-29/section-1904.3&quot;,&quot;citation&quot;:&quot;29 CFR 1904.3&quot;}">
+<HEAD>&#xA7; 1904.3 Keeping records for more than one agency.</HEAD>
+<P>If you create records to comply with another government agency's injury and illness recordkeeping requirements, OSHA will consider those records as meeting OSHA's part 1904 recordkeeping requirements if OSHA accepts the other agency's records under a memorandum of understanding with that agency, or if the other agency's records contain the same information as this part 1904 requires you to record. You may contact your nearest OSHA office or State agency for help in determining whether your records meet OSHA's requirements.</P>
+</DIV8>
+
+<DIV9 N="Non-Mandatory Appendix A to Subpart B of Part 1904" TYPE="APPENDIX" hierarchy_metadata="{&quot;path&quot;:&quot;/on/_SUBSTITUTE_DATE_/title-29/part-1904/appendix-Non-Mandatory Appendix A to Subpart B of Part 1904&quot;,&quot;citation&quot;:&quot;Non-Mandatory Appendix A to Subpart B of Part 1904, Title 29&quot;}">
+<HEAD>Non-Mandatory Appendix A to Subpart B of Part 1904&#x2014;Partially Exempt Industries
+</HEAD>
+<P>Employers are not required to keep OSHA injury and illness records for any establishment classified in the following North American Industry Classification System (NAICS) codes, unless they are asked in writing to do so by OSHA, the Bureau of Labor Statistics (BLS), or a state agency operating under the authority of OSHA or the BLS. All employers, including those partially exempted by reason of company size or industry classification, must report to OSHA any employee's fatality, in-patient hospitalization, amputation, or loss of an eye (see &#xA7; 1904.39).</P>
+<DIV width="100%"><DIV class="gpotbl_div">
+<TABLE border="1" cellpadding="1" cellspacing="1" class="gpo_table" frame="void" width="100%">
+<THEAD>
+<TR>
+<TH class="center border-top-single border-bottom-single border-right-single">NAICS Code</TH>
+<TH class="center border-top-single border-bottom-single">Industry</TH>
+</TR>
+</THEAD>
+<TBODY>
+<TR>
+<TD class="left border-right-single">4412</TD>
+<TD class="left">Other Motor Vehicle Dealers.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4431</TD>
+<TD class="left">Electronics and Appliance Stores.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4461</TD>
+<TD class="left">Health and Personal Care Stores.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4471</TD>
+<TD class="left">Gasoline Stations.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4481</TD>
+<TD class="left">Clothing Stores.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4482</TD>
+<TD class="left">Shoe Stores.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4483</TD>
+<TD class="left">Jewelry, Luggage, and Leather Goods Stores.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4511</TD>
+<TD class="left">Sporting Goods, Hobby, and Musical Instrument Stores.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4512</TD>
+<TD class="left">Book, Periodical, and Music Stores.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4531</TD>
+<TD class="left">Florists.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4532</TD>
+<TD class="left">Office Supplies, Stationery, and Gift Stores.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4812</TD>
+<TD class="left">Nonscheduled Air Transportation.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4861</TD>
+<TD class="left">Pipeline Transportation of Crude Oil.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4862</TD>
+<TD class="left">Pipeline Transportation of Natural Gas.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4869</TD>
+<TD class="left">Other Pipeline Transportation.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4879</TD>
+<TD class="left">Scenic and Sightseeing Transportation, Other.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">4885</TD>
+<TD class="left">Freight Transportation Arrangement.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5111</TD>
+<TD class="left">Newspaper, Periodical, Book, and Directory Publishers.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5112</TD>
+<TD class="left">Software Publishers.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5121</TD>
+<TD class="left">Motion Picture and Video Industries.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5122</TD>
+<TD class="left">Sound Recording Industries.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5151</TD>
+<TD class="left">Radio and Television Broadcasting.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5172</TD>
+<TD class="left">Wireless Telecommunications Carriers (except Satellite).</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5173</TD>
+<TD class="left">Telecommunications Resellers.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5179</TD>
+<TD class="left">Other Telecommunications.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5181</TD>
+<TD class="left">Internet Service Providers and Web Search Portals.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5182</TD>
+<TD class="left">Data Processing, Hosting, and Related Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5191</TD>
+<TD class="left">Other Information Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5211</TD>
+<TD class="left">Monetary Authorities&#x2014;Central Bank.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5221</TD>
+<TD class="left">Depository Credit Intermediation.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5222</TD>
+<TD class="left">Nondepository Credit Intermediation.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5223</TD>
+<TD class="left">Activities Related to Credit Intermediation.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5231</TD>
+<TD class="left">Securities and Commodity Contracts Intermediation and Brokerage.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5232</TD>
+<TD class="left">Securities and Commodity Exchanges.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5239</TD>
+<TD class="left">Other Financial Investment Activities.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5241</TD>
+<TD class="left">Insurance Carriers.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5242</TD>
+<TD class="left">Agencies, Brokerages, and Other Insurance Related Activities.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5251</TD>
+<TD class="left">Insurance and Employee Benefit Funds.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5259</TD>
+<TD class="left">Other Investment Pools and Funds.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5312</TD>
+<TD class="left">Offices of Real Estate Agents and Brokers.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5331</TD>
+<TD class="left">Lessors of Nonfinancial Intangible Assets (except Copyrighted Works).</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5411</TD>
+<TD class="left">Legal Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5412</TD>
+<TD class="left">Accounting, Tax Preparation, Bookkeeping, and Payroll Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5413</TD>
+<TD class="left">Architectural, Engineering, and Related Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5414</TD>
+<TD class="left">Specialized Design Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5415</TD>
+<TD class="left">Computer Systems Design and Related Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5416</TD>
+<TD class="left">Management, Scientific, and Technical Consulting Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5417</TD>
+<TD class="left">Scientific Research and Development Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5418</TD>
+<TD class="left">Advertising and Related Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5511</TD>
+<TD class="left">Management of Companies and Enterprises.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5611</TD>
+<TD class="left">Office Administrative Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5614</TD>
+<TD class="left">Business Support Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5615</TD>
+<TD class="left">Travel Arrangement and Reservation Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">5616</TD>
+<TD class="left">Investigation and Security Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6111</TD>
+<TD class="left">Elementary and Secondary Schools.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6112</TD>
+<TD class="left">Junior Colleges.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6113</TD>
+<TD class="left">Colleges, Universities, and Professional Schools.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6114</TD>
+<TD class="left">Business Schools and Computer and Management Training.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6115</TD>
+<TD class="left">Technical and Trade Schools.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6116</TD>
+<TD class="left">Other Schools and Instruction.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6117</TD>
+<TD class="left">Educational Support Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6211</TD>
+<TD class="left">Offices of Physicians.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6212</TD>
+<TD class="left">Offices of Dentists.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6213</TD>
+<TD class="left">Offices of Other Health Practitioners.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6214</TD>
+<TD class="left">Outpatient Care Centers.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6215</TD>
+<TD class="left">Medical and Diagnostic Laboratories.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">6244</TD>
+<TD class="left">Child Day Care Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">7114</TD>
+<TD class="left">Agents and Managers for Artists, Athletes, Entertainers, and Other Public Figures.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">7115</TD>
+<TD class="left">Independent Artists, Writers, and Performers.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">7213</TD>
+<TD class="left">Rooming and Boarding Houses.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">7221</TD>
+<TD class="left">Full-Service Restaurants.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">7222</TD>
+<TD class="left">Limited-Service Eating Places.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">7224</TD>
+<TD class="left">Drinking Places (Alcoholic Beverages).</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">8112</TD>
+<TD class="left">Electronic and Precision Equipment Repair and Maintenance.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">8114</TD>
+<TD class="left">Personal and Household Goods Repair and Maintenance.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">8121</TD>
+<TD class="left">Personal Care Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">8122</TD>
+<TD class="left">Death Care Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">8131</TD>
+<TD class="left">Religious Organizations.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">8132</TD>
+<TD class="left">Grantmaking and Giving Services.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">8133</TD>
+<TD class="left">Social Advocacy Organizations.</TD>
+</TR>
+<TR>
+<TD class="left border-right-single">8134</TD>
+<TD class="left">Civic and Social Organizations.</TD>
+</TR>
+<TR>
+<TD class="left border-bottom-single border-right-single">8139</TD>
+<TD class="left border-bottom-single">Business, Professional, Labor, Political, and Similar Organizations.</TD>
+</TR>
+</TBODY>
+</TABLE>
+</DIV></DIV>
+<CITA TYPE="N">[79 FR 56186, Sept. 18, 2014]
+</CITA>
+</DIV9>
+
+</DIV6>
+</DIV5>

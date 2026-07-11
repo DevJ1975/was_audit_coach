@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Soteria Audit",
+    "slug": "soteria-audit",
+    "version": "0.1.0",
+    "scheme": "soteria",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "backgroundColor": "#0E141B",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0E141B"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.trainovate.soteriaaudit"
+    },
+    "android": {
+      "package": "com.trainovate.soteriaaudit",
+      "adaptiveIcon": {
+        "backgroundColor": "#0E141B"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "Soteria Audit",
+      "shortName": "Soteria",
+      "description": "Offline-first EHS audit platform",
+      "themeColor": "#0E141B",
+      "backgroundColor": "#0E141B",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "en"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attach photos as audit evidence.",
+          "cameraPermission": "Capture photos as audit evidence."
+        }
+      ],
+      [
+        "expo-av",
+        { "microphonePermission": "Record voice notes as audit evidence." }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

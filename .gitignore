@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.expo/
+web-build/
+*.log
+.DS_Store
+
+# Secrets & local config
+.env
+.env.local
+.env*.local
+
+# Source workbook (proprietary) & generated seed are produced by ETL locally
+WLS_Audit_Coach_OSHA.xlsx
+
+# Regulation-corpus ETL artifacts (npm run reg-etl -- --out=…)
+data/reg-corpus/
