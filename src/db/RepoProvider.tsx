@@ -8,7 +8,7 @@
  */
 import React, { createContext, useContext, useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { getDatabase } from './database';
+import { getDatabase, onDatabaseYielded, YIELDED_MESSAGE } from './database';
 import { createSqliteRepo } from './sqliteRepo';
 import type { Repo } from './repo';
 import { useAuth, type Identity } from '@/auth/AuthProvider';
@@ -30,6 +30,14 @@ export function RepoProvider({ children }: { children: React.ReactNode }): React
 
   useEffect(() => {
     let cancelled = false;
+    // If a newer tab takes the database over, this tab's repo is dead — swap
+    // the whole UI for the hand-over notice (reload takes it back).
+    onDatabaseYielded(() => {
+      if (!cancelled) {
+        setValue(null);
+        setError(YIELDED_MESSAGE);
+      }
+    });
     (async () => {
       try {
         const db = await getDatabase();
