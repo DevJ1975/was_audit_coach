@@ -11,7 +11,8 @@ import { useAuditItem, useAuditData } from '@/hooks/useAudit';
 import { useDictation } from '@/hooks/useDictation';
 import { libraryItem } from '@/seed';
 import { compareByCode } from '@/domain/ordering';
-import { requestDraft, isAiConfigured } from '@/ai/client';
+import { requestDraft } from '@/ai/client';
+import { useAiReady, aiHintText } from '@/hooks/useAiReady';
 import { buildObservationPolish, buildRecommendationDraft, buildAriaCoach, type GroundingItem } from '@/ai/prompts';
 import type { Rating } from '@soteria/scoring-engine';
 import { surfaces, text as textTokens, brand, ratingColors, layout, semantic } from '@/theme/tokens';
@@ -68,7 +69,8 @@ export default function ItemCardScreen(): React.ReactElement {
 
   // AI drafting state (Phase 3). A draft is ALWAYS an editable suggestion the
   // auditor must accept; it never sets a rating (Non-Negotiable #2).
-  const aiOn = isAiConfigured();
+  const aiGate = useAiReady();
+  const aiOn = aiGate.ready;
   const [aiBusy, setAiBusy] = useState<'observations' | 'recommendations' | 'aria' | null>(null);
   const [aiDraft, setAiDraft] = useState<{ field: 'observations' | 'recommendations'; text: string } | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -355,7 +357,7 @@ export default function ItemCardScreen(): React.ReactElement {
             disabled={!aiOn || aiBusy !== null || !obs.trim()}
           />
           {micFor('observations')}
-          {!aiOn ? <Text style={styles.aiHint}>Connects when online</Text> : null}
+          {!aiOn ? <Text style={styles.aiHint}>{aiHintText(aiGate)}</Text> : null}
         </View>
         {aiDraft?.field === 'observations' ? (
           <AiDraftBox text={aiDraft.text} onAccept={acceptDraft} onDiscard={() => setAiDraft(null)} />
@@ -386,7 +388,7 @@ export default function ItemCardScreen(): React.ReactElement {
             disabled={!aiOn || aiBusy !== null}
           />
           {micFor('recommendations')}
-          {!aiOn ? <Text style={styles.aiHint}>Connects when online</Text> : null}
+          {!aiOn ? <Text style={styles.aiHint}>{aiHintText(aiGate)}</Text> : null}
         </View>
         {aiDraft?.field === 'recommendations' ? (
           <AiDraftBox text={aiDraft.text} onAccept={acceptDraft} onDiscard={() => setAiDraft(null)} />
@@ -417,7 +419,7 @@ export default function ItemCardScreen(): React.ReactElement {
             onPress={askAria}
             disabled={!aiOn || aiBusy !== null || !ariaQuestion.trim()}
           />
-          {!aiOn ? <Text style={styles.aiHint}>Connects when online</Text> : null}
+          {!aiOn ? <Text style={styles.aiHint}>{aiHintText(aiGate)}</Text> : null}
         </View>
         {ariaAnswer ? (
           <View style={styles.aiBox}>

@@ -26,10 +26,10 @@ import { Button } from '@/components/ui';
 import {
   askAuditCoach,
   getCoachThread,
-  isAiConfigured,
   resetCoachThread,
   type CoachTurn,
 } from '@/ai/coach';
+import { useAiReady } from '@/hooks/useAiReady';
 import { useAuditData } from '@/hooks/useAudit';
 import { libraryItem, sectionNames } from '@/seed';
 import type { Audit } from '@/db/types';
@@ -63,7 +63,8 @@ export default function AuditCoachScreen(): React.ReactElement {
     seed?: string;
   }>();
   const { audit } = useAuditData(auditId);
-  const aiOn = isAiConfigured();
+  const aiGate = useAiReady();
+  const aiOn = aiGate.ready;
 
   const stored = getCoachThread(auditId);
   const [messages, setMessages] = useState<CoachTurn[]>(stored.messages);
@@ -176,8 +177,9 @@ export default function AuditCoachScreen(): React.ReactElement {
 
         {!aiOn ? (
           <Text style={styles.offline}>
-            The coach connects when the app is online and signed in. Your audit keeps
-            working offline as always.
+            {aiGate.reason === 'signin'
+              ? 'Sign in (top right of the home screen) to use the coach. Your audit keeps working offline as always.'
+              : 'The coach connects when the app is online and signed in. Your audit keeps working offline as always.'}
           </Text>
         ) : null}
 
