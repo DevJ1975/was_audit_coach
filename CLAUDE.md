@@ -42,11 +42,15 @@ item flag `needs_resolution` for the lead auditor. Never silently overwrite a ra
 ## Open items (do NOT guess — see Part 5 of the plan)
 1. **SIF curation** — `sif_potential` defaults `false` on all 374 items; build the field
    + badge, await Jay's SME list.
-2. **Three inverted scoping rows** — FP-16 (standpipe), OH-1 (abrasive blasting),
-   OH-3 (spray finishing) read "No → applies". Confirm polarity before wiring; the
-   other 12 are "Yes → applies".
-3. **Naming** — platform ships as **Soteria Audit**; "WLS Audit Coach" is the WLS org's
-   white-label theme. Confirm app-store name before EAS submit.
+2. **Three inverted scoping rows — RESOLVED (Jamil, 2026-07-11)**: FP-16
+   (standpipe), OH-1 (abrasive blasting), OH-3 (spray finishing) are confirmed
+   "No → applies", exactly as the workbook reads and as wired in the seed
+   (`applies_on: 'No'` on SCOPE-07/09/10). The other 12 are "Yes → applies".
+3. **Naming — RESOLVED (Jamil, 2026-07-11)**: the app ships as **WLS Audit Coach**;
+   bundle IDs are `com.trainovate.wlsauditcoach` (`expo.name`, PWA manifest, iOS
+   `bundleIdentifier`, Android `package` in `app.json`, Maestro `appId`). "Soteria
+   Audit" stays the internal platform name; slug `soteria-audit` and scheme
+   `soteria` unchanged. Bundle IDs lock permanently at first store submit.
 
 ## Layout
 ```
