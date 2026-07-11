@@ -163,19 +163,32 @@ Same shape as `ai-draft` — key server-side, app talks through the seam:
 | **C6 — State long tail + Tier 2** | Remaining adapters; interpretation letters/directives corpus | Full 29-plan jurisdiction routing | ⏳ |
 | **C7 — Freshness** | Scheduled re-ingest + diff + monitoring (§9) | A simulated eCFR change lands in the corpus within one cycle, with changelog | ⏳ (`npm run reg-etl` is already the idempotent re-ingest; needs the cron wrapper) |
 
-### Cloud bring-up (the only steps left to a live chatbot)
+### Cloud bring-up — status as of 2026-07-11 (project `dklwdrtvvjoivmxljcof`)
+
+Verified live: **migration 0003 is applied** (reg tables + `search_regulations`
+RPC respond), the app `.env` points at the project, and the Anthropic key has
+been validated (claude-sonnet-5 + opus-4-8 available). Still missing — these
+need a Supabase access token or the dashboard; the MCP connector is authorized
+for a different org:
+
 ```bash
-# 1. Apply supabase/migrations/0003_reg_corpus.sql (SQL editor or supabase db push)
-# 2. Secrets for the Edge Function:
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-...   # required
-supabase secrets set VOYAGE_API_KEY=pa-...          # optional; omit = FTS-only retrieval
-# 3. Deploy:
-supabase functions deploy soteria-chat
-# 4. Load the corpus (service role; re-runs are no-ops until the eCFR changes):
-SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... VOYAGE_API_KEY=... npm run reg-etl
-# 5. Acceptance: retrieval smoke set against the live corpus
+export SUPABASE_ACCESS_TOKEN=sbp_...   # or: npx supabase login
+npx supabase link --project-ref dklwdrtvvjoivmxljcof
+# 1. Deploy all three AI functions (none deployed yet — all 404):
+npx supabase functions deploy ai-draft soteria-chat audit-coach
+# 2. Secrets (required by all three; VOYAGE optional = hybrid vs FTS-only):
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+npx supabase secrets set VOYAGE_API_KEY=pa-...
+# 3. Load the corpus (service role key: dashboard → Settings → API):
+SUPABASE_URL=https://dklwdrtvvjoivmxljcof.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=... VOYAGE_API_KEY=... npm run reg-etl
+# (loaded FTS-only earlier? backfill embeddings later with --embed-missing)
+# 4. Acceptance: retrieval smoke set against the live corpus
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... VOYAGE_API_KEY=... npm test
 ```
+
+No service key at hand? `npm run reg-etl -- --dry-run --sql-out=data/reg-sql`
+emits 77 idempotent SQL batches for the SQL editor / management API instead.
 
 ---
 
