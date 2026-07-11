@@ -6,12 +6,13 @@
  * Reference/read-only library + scoping questions are bundled JSON (src/seed),
  * not stored here — only tenant/audit state lives in SQLite.
  */
+import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 
 export type DB = SQLite.SQLiteDatabase;
 
 const DB_NAME = 'soteria.db';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 3;
 
 let dbPromise: Promise<DB> | null = null;
 
@@ -19,13 +20,96 @@ let dbPromise: Promise<DB> | null = null;
 export function getDatabase(): Promise<DB> {
   if (!dbPromise) {
     dbPromise = (async () => {
+      await ensureSoleTabOwner();
       const db = await SQLite.openDatabaseAsync(DB_NAME);
-      await db.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
-      await migrate(db);
+      try {
+        await db.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+        await migrate(db);
+      } catch (e) {
+        // Don't leak the opened handle when a retry follows a failed migrate.
+        await db.closeAsync().catch(() => {});
+        throw e;
+      }
       return db;
-    })();
+    })().catch((e) => {
+      // Never cache a rejected open: leaving dbPromise holding the rejection
+      // would replay this failure to every later caller for the life of the
+      // JS context. Clearing it lets a retry (RepoProvider's button, or a
+      // remount) attempt a genuinely fresh open.
+      dbPromise = null;
+      throw toStorageError(e);
+    });
   }
   return dbPromise;
+}
+
+// ————— Web (OPFS) single-tab ownership —————————————————————————————————————
+//
+// On web, expo-sqlite persists via OPFS sync access handles, which are
+// EXCLUSIVE per origin: only one tab can hold the database. Worse, if handle
+// acquisition fails, expo-sqlite's worker is left permanently wedged (every
+// later open throws "Invalid VFS state") — only a page reload recovers. So a
+// second tab must be detected BEFORE the driver is touched: we claim a Web
+// Lock for the life of the page, and a tab that can't get it fails fast with
+// an actionable message while its worker is still healthy.
+
+const TAB_LOCK_NAME = 'soteria.db.tab-owner';
+
+const MULTI_TAB_MESSAGE =
+  'This app appears to be open in another browser tab or window. ' +
+  'Close the other tab, then reload this page. ' +
+  '(If no other tab is open, close every tab of this app and reopen it.)';
+
+/** Minimal Web Locks surface — avoids depending on TS DOM lib types. */
+interface WebLockManager {
+  request(
+    name: string,
+    options: { ifAvailable: boolean },
+    callback: (lock: object | null) => unknown,
+  ): Promise<unknown>;
+}
+
+let tabLockHeld = false;
+
+async function ensureSoleTabOwner(): Promise<void> {
+  if (Platform.OS !== 'web' || tabLockHeld) return;
+  const locks = (globalThis as { navigator?: { locks?: WebLockManager } }).navigator?.locks;
+  if (!locks) return; // no Web Locks API — fall through to the driver's own error
+  const outcome = await new Promise<'acquired' | 'blocked' | 'error'>((resolve) => {
+    locks
+      .request(TAB_LOCK_NAME, { ifAvailable: true }, (lock) => {
+        resolve(lock !== null ? 'acquired' : 'blocked');
+        // Hold the lock until the page unloads (the browser releases it with
+        // the OPFS handles) so sibling tabs fail fast instead of wedging.
+        return lock ? new Promise<never>(() => {}) : undefined;
+      })
+      .catch(() => resolve('error')); // lock machinery failed — let the open proceed
+  });
+  if (outcome === 'blocked') throw new Error(MULTI_TAB_MESSAGE);
+  if (outcome === 'acquired') tabLockHeld = true;
+}
+
+/** Translate driver internals into operator-actionable messages. */
+function toStorageError(e: unknown): Error {
+  if (Platform.OS === 'web') {
+    const text = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    // OPFS handle contention the lock couldn't see (stale worker from a
+    // crashed page, non-Locks browser), or a worker already wedged by an
+    // earlier failed open. Neither is recoverable without a reload.
+    if (/InvalidStateError|invalid state|Invalid VFS state/i.test(text)) {
+      // Keep the raw driver error findable for support; the UI shows guidance.
+      console.error('[db] storage open failed:', text);
+      return new Error(MULTI_TAB_MESSAGE);
+    }
+  }
+  return e instanceof Error ? e : new Error(String(e));
+}
+
+async function addColumnIfMissing(db: DB, table: string, column: string, ddl: string): Promise<void> {
+  const cols = await db.getAllAsync<{ name: string }>(`PRAGMA table_info(${table});`);
+  if (!cols.some((c) => c.name === column)) {
+    await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl};`);
+  }
 }
 
 async function migrate(db: DB): Promise<void> {
@@ -33,7 +117,8 @@ async function migrate(db: DB): Promise<void> {
   const current = row?.user_version ?? 0;
   if (current >= SCHEMA_VERSION) return;
 
-  await db.execAsync(`
+  // v1 — baseline schema (tenant/audit state; the library is bundled JSON).
+  if (current < 1) await db.execAsync(`
     CREATE TABLE IF NOT EXISTS audits (
       id TEXT PRIMARY KEY NOT NULL,
       org_id TEXT NOT NULL,
@@ -124,9 +209,32 @@ async function migrate(db: DB): Promise<void> {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_disclosure_audit ON disclosure_log(audit_id);
-
-    PRAGMA user_version = ${SCHEMA_VERSION};
   `);
+
+  // v2 — evidence upload sync. Track the Storage object path + upload state, and
+  // a removal tombstone, on attachments. Added via ALTER (not baked into the v1
+  // CREATE) so a device already on v1 converges to the same shape as a fresh
+  // install. Existing local rows default to 'local' = pending upload, which is
+  // exactly right: they were captured offline and never reached Storage.
+  if (current < 2) {
+    await addColumnIfMissing(db, 'attachments', 'storage_path', 'TEXT');
+    await addColumnIfMissing(db, 'attachments', 'sync_state', "TEXT NOT NULL DEFAULT 'local'");
+    await addColumnIfMissing(db, 'attachments', 'deleted_at', 'TEXT');
+  }
+
+  // v3 — conflict resolution + server push cursors. `conflict_rating` holds
+  // the PEER's divergent rating while an item is needs_resolution so the lead
+  // auditor can compare and pick; `pushed` marks events/disclosures already
+  // appended to the server's insert-only logs so each sync sends only the
+  // delta (the disclosure log grows on every report view — unbounded re-push
+  // otherwise).
+  if (current < 3) {
+    await addColumnIfMissing(db, 'audit_items', 'conflict_rating', 'TEXT');
+    await addColumnIfMissing(db, 'audit_item_events', 'pushed', 'INTEGER NOT NULL DEFAULT 0');
+    await addColumnIfMissing(db, 'disclosure_log', 'pushed', 'INTEGER NOT NULL DEFAULT 0');
+  }
+
+  await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
 }
 
 /** Test/dev helper — drop everything (never call in production flows). */

@@ -16,6 +16,7 @@ import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { Audio, type AVPlaybackStatus } from 'expo-av';
+import type { EvidenceBlob } from '@/db/sync/remote';
 
 /** Result of a capture attempt. `denied` carries whether the OS will re-prompt. */
 export type CaptureResult =
@@ -49,6 +50,71 @@ async function persist(uri: string): Promise<string> {
   } catch {
     return uri;
   }
+}
+
+/** Guess a Storage content-type from a file extension (defaults to octet-stream). */
+export function contentTypeFor(uri: string): string {
+  const ext = (uri.split('?')[0]?.split('#')[0]?.split('.').pop() || '').toLowerCase();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg': return 'image/jpeg';
+    case 'png': return 'image/png';
+    case 'heic': return 'image/heic';
+    case 'webp': return 'image/webp';
+    case 'gif': return 'image/gif';
+    case 'pdf': return 'application/pdf';
+    case 'm4a':
+    case 'mp4': return 'audio/mp4';
+    case 'caf': return 'audio/x-caf';
+    case 'wav': return 'audio/wav';
+    case 'webm': return 'audio/webm';
+    default: return 'application/octet-stream';
+  }
+}
+
+const B64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const B64_LOOKUP = /* @__PURE__ */ (() => {
+  const t = new Uint8Array(256);
+  for (let i = 0; i < B64_ALPHABET.length; i++) t[B64_ALPHABET.charCodeAt(i)] = i;
+  return t;
+})();
+
+/**
+ * Decode base64 → bytes with no dependency on a global atob (not guaranteed on
+ * Hermes). Pure; exported for unit coverage. Ignores whitespace and padding.
+ */
+export function base64ToBytes(b64: string): Uint8Array {
+  const clean = b64.replace(/[^A-Za-z0-9+/]/g, '');
+  const bytes = new Uint8Array(Math.floor((clean.length * 6) / 8));
+  let buffer = 0;
+  let bits = 0;
+  let o = 0;
+  for (let i = 0; i < clean.length; i++) {
+    buffer = (buffer << 6) | B64_LOOKUP[clean.charCodeAt(i)]!;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes[o++] = (buffer >> bits) & 0xff;
+    }
+  }
+  return bytes;
+}
+
+/**
+ * Read a captured file into an upload-ready payload for Storage. Platform-aware:
+ * on web we fetch the object/blob URL; on native we read the file as base64 and
+ * decode to bytes (avoiding an unreliable file:// fetch on RN). Returns the bytes
+ * plus a best-effort content type. Throws if the file can't be read — the caller
+ * (AttachmentSync) treats that as a retryable per-file failure, never fatal.
+ */
+export async function loadForUpload(uri: string): Promise<EvidenceBlob> {
+  if (Platform.OS === 'web') {
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    return { data: blob, contentType: blob.type || contentTypeFor(uri) };
+  }
+  const b64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+  return { data: base64ToBytes(b64), contentType: contentTypeFor(uri) };
 }
 
 /** Best-effort delete of a persisted evidence file when its attachment is removed. */

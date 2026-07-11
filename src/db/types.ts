@@ -12,6 +12,15 @@ export type AuditStatus = 'draft' | 'in_progress' | 'complete' | 'archived';
 
 export type AttachmentKind = 'photo' | 'document' | 'voice';
 
+/**
+ * Upload state for an evidence file (Phase 2 → cloud). `local` = captured on
+ * this device, not yet in Storage; `synced` = the bytes are in the tenant
+ * `evidence` bucket and the metadata row is on the server. Removal of a synced
+ * attachment is a tombstone (see `Attachment.deleted_at`) so the deletion can
+ * propagate to Storage before the local row is purged — never a network block.
+ */
+export type AttachmentSyncState = 'local' | 'synced';
+
 export type CAStatus = 'open' | 'in_progress' | 'verified' | 'closed';
 
 /** Sync state for the per-item rating-conflict policy (Phase 4). */
@@ -72,6 +81,12 @@ export interface AuditItem {
   /** Set when the current observations/recommendations text was AI-drafted then accepted. */
   ai_generated: boolean;
   sync_state: ItemSyncState;
+  /**
+   * The PEER's rating while sync_state is 'needs_resolution' — surfaced so the
+   * lead auditor sees both candidates and picks (conflict policy). Null when
+   * not conflicted. Never rendered as the item's rating.
+   */
+  conflict_rating: Rating | null;
   updated_at: string;
 }
 
@@ -104,8 +119,18 @@ export interface Attachment {
   org_id: string;
   audit_item_id: string;
   kind: AttachmentKind;
-  /** Local file URI (offline); becomes a Storage path after sync. */
+  /** Durable local file URI (offline capture). Empty once a row is only remote. */
   uri: string;
+  /** Object path in the tenant `evidence` bucket; null until uploaded. */
+  storage_path: string | null;
+  /** Whether the bytes have reached Storage (see AttachmentSyncState). */
+  sync_state: AttachmentSyncState;
+  /**
+   * Tombstone stamp. Set when a *synced* attachment is removed so the upload
+   * pass can delete the Storage object + server row before purging the local
+   * row. Null for live rows; tombstoned rows never appear in listAttachments.
+   */
+  deleted_at: string | null;
   transcription: string | null;
   created_at: string;
 }

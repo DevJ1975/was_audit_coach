@@ -10,18 +10,26 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@soteria/scoring-engine": ["packages/scoring-engine/src/index.ts"],
-      "@scoring/*": ["packages/scoring-engine/src/*"]
+      "@/*": [
+        "src/*"
+      ],
+      "@soteria/scoring-engine": [
+        "packages/scoring-engine/src/index.ts"
+      ],
+      "@scoring/*": [
+        "packages/scoring-engine/src/*"
+      ]
     }
   },
   "include": [
     "src",
     "packages",
     "scripts",
-    "expo-env.d.ts",
     "*.ts",
     "*.tsx"
   ],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

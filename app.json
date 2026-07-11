@@ -10,7 +10,8 @@
     "backgroundColor": "#0E141B",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#0E141B"
+      "backgroundColor": "#0E141B",
+      "image": "./public/icons/icon-512.png"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,7 +20,8 @@
     "android": {
       "package": "com.trainovate.wlsauditcoach",
       "adaptiveIcon": {
-        "backgroundColor": "#0E141B"
+        "backgroundColor": "#0E141B",
+        "foregroundImage": "./public/icons/icon-1024.png"
       }
     },
     "web": {
@@ -32,7 +34,8 @@
       "backgroundColor": "#0E141B",
       "display": "standalone",
       "orientation": "portrait",
-      "lang": "en"
+      "lang": "en",
+      "favicon": "./public/icons/icon-48.png"
     },
     "plugins": [
       "expo-router",
@@ -47,11 +50,14 @@
       ],
       [
         "expo-av",
-        { "microphonePermission": "Record voice notes as audit evidence." }
+        {
+          "microphonePermission": "Record voice notes as audit evidence."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "icon": "./public/icons/icon-1024.png"
   }
 }

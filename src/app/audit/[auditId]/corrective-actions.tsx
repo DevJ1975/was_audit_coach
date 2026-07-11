@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Chip, TextInput, Text } from 'react-native-paper';
-import { Screen, Card, Subtitle, Mono } from '@/components/ui';
+import { Screen, Card, Button, Subtitle, Mono } from '@/components/ui';
 import { SifBadge, PrivilegeBanner } from '@/components/badges';
 import { useSession } from '@/db/RepoProvider';
 import { useCorrectiveActions, type CaItemMeta } from '@/hooks/useCorrectiveActions';
 import { isOverdue } from '@/domain/analytics';
 import { nowIso } from '@/db/ids';
 import type { CAStatus, CorrectiveAction } from '@/db/types';
-import { ratingColors, surfaces, text as textTokens, layout } from '@/theme/tokens';
+import { ratingColors, surfaces, text as textTokens, layout, semantic } from '@/theme/tokens';
 
 const STATUSES: CAStatus[] = ['open', 'in_progress', 'verified', 'closed'];
 const STATUS_LABEL: Record<CAStatus, string> = {
@@ -21,11 +21,13 @@ function CARow({
   meta,
   userId,
   onCommit,
+  onOpenItem,
 }: {
   ca: CorrectiveAction;
   meta: CaItemMeta | undefined;
   userId: string;
   onCommit: (ca: CorrectiveAction) => void;
+  onOpenItem: () => void;
 }): React.ReactElement {
   const [assigned, setAssigned] = useState(ca.assigned_to ?? '');
   const [due, setDue] = useState(ca.due_date ?? '');
@@ -81,7 +83,13 @@ function CARow({
         ))}
       </View>
       {ca.status === 'closed' && ca.close_date ? (
-        <Text style={styles.meta}>Closed {ca.close_date}{ca.verified_by ? ` · verified by ${ca.verified_by}` : ''} · attach closure photo in Phase 2</Text>
+        <View style={styles.closedRow}>
+          <Text style={styles.meta}>
+            Closed {ca.close_date}
+            {ca.verified_by ? ` · verified by ${ca.verified_by}` : ''} · closure evidence lives on the item card
+          </Text>
+          <Button label="Open item card" variant="ghost" onPress={onOpenItem} />
+        </View>
       ) : null}
     </Card>
   );
@@ -89,6 +97,7 @@ function CARow({
 
 export default function CorrectiveActionsScreen(): React.ReactElement {
   const { auditId } = useLocalSearchParams<{ auditId: string }>();
+  const router = useRouter();
   const session = useSession();
   const { audit, cas, itemMeta, update } = useCorrectiveActions(auditId);
 
@@ -107,25 +116,33 @@ export default function CorrectiveActionsScreen(): React.ReactElement {
       ) : null}
 
       {cas.map((ca) => (
-        <CARow key={ca.id} ca={ca} meta={itemMeta[ca.audit_item_id]} userId={session.user_id} onCommit={update} />
+        <CARow
+          key={ca.id}
+          ca={ca}
+          meta={itemMeta[ca.audit_item_id]}
+          userId={session.user_id}
+          onCommit={update}
+          onOpenItem={() => router.push(`/audit/${auditId}/item/${ca.audit_item_id}`)}
+        />
       ))}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  overdueCard: { borderColor: '#D9483B', borderWidth: 1 },
+  overdueCard: { borderColor: semantic.danger, borderWidth: 1 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   code: { color: textTokens.primary, fontSize: 15, fontWeight: '800' },
   tag: { fontSize: 13, fontWeight: '800', marginLeft: 'auto' },
-  overdue: { color: '#D9483B', fontSize: 11, fontWeight: '800' },
+  overdue: { color: semantic.danger, fontSize: 11, fontWeight: '800' },
   fields: { flexDirection: 'row', gap: 8, marginTop: 6 },
   field: { flex: 1, backgroundColor: surfaces.raised },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  chip: { backgroundColor: surfaces.raised, minHeight: 40 },
+  chip: { backgroundColor: surfaces.raised, minHeight: layout.minTapTarget, justifyContent: 'center' },
   chipOn: { backgroundColor: surfaces.line },
   chipText: { fontSize: 12 },
   req: { color: textTokens.primary, fontSize: 13, lineHeight: 18, marginTop: 4 },
-  meta: { color: textTokens.faint, fontSize: 11, marginTop: 6 },
+  meta: { color: textTokens.faint, fontSize: 11 },
+  closedRow: { gap: 2, marginTop: 6, alignItems: 'flex-start' },
   empty: { color: textTokens.dim },
 });

@@ -25,6 +25,17 @@ export const brand = {
   default: '#4FA3E3',
 } as const;
 
+/**
+ * Semantic status colors (warnings, errors, success ticks). Distinct from the
+ * OSHA rating palette below — these style app chrome, not risk levels — but
+ * still the single source: screens must not inline these hex values.
+ */
+export const semantic = {
+  warn: '#E7C33B',
+  danger: '#D9483B',
+  success: '#3CA96B',
+} as const;
+
 /** CONSTANT across tenants. Do not theme these. */
 export const ratingColors: Record<Rating, string> = {
   'Best Practice': '#17B890',
@@ -64,6 +75,7 @@ export const tokens = {
   surfaces,
   text,
   brand,
+  semantic,
   ratingColors,
   tierColors,
   layout,

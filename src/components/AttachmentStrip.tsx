@@ -25,13 +25,13 @@ import {
   VoiceRecorder,
   type CaptureResult,
 } from '@/attachments/capture';
-import { surfaces, text as textTokens, layout, brand } from '@/theme/tokens';
+import { surfaces, text as textTokens, layout, brand, semantic } from '@/theme/tokens';
 
 // 24pt delete badge + 12pt slop on every edge = a 48pt touch target (NN #10).
 const DELETE_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 };
 
 export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React.ReactElement {
-  const { attachments, add, remove } = useAttachments(auditItemId);
+  const { attachments, add, remove, resolveUri } = useAttachments(auditItemId);
   const recorder = useRef(new VoiceRecorder());
   const player = useRef(createAudioPlayer());
   const busyRef = useRef(false); // synchronous guard: blocks double-taps before state settles
@@ -109,7 +109,21 @@ export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React
 
   async function deleteAttachment(id: string, uri: string): Promise<void> {
     await remove(id);
-    void deleteEvidenceFile(uri);
+    if (uri) void deleteEvidenceFile(uri);
+  }
+
+  // Remote-only evidence (captured on another device) has no local file — view
+  // and playback resolve a short-lived signed Storage URL on demand.
+  async function openPhoto(att: (typeof attachments)[number]): Promise<void> {
+    const uri = await resolveUri(att);
+    if (uri) setPreview(uri);
+    else Alert.alert('Photo unavailable offline', 'This photo was captured on another device. Connect to view it.');
+  }
+
+  async function playVoice(att: (typeof attachments)[number]): Promise<void> {
+    const uri = await resolveUri(att);
+    if (uri) await player.current.play(uri);
+    else Alert.alert('Voice note unavailable offline', 'This note was recorded on another device. Connect to play it.');
   }
 
   return (
@@ -133,8 +147,14 @@ export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React
           {attachments.map((a) =>
             a.kind === 'photo' ? (
               <View key={a.id} style={styles.thumbWrap}>
-                <Pressable onPress={() => setPreview(a.uri)} accessibilityRole="imagebutton" accessibilityLabel="Open photo">
-                  <Image source={{ uri: a.uri }} style={styles.thumb} />
+                <Pressable onPress={() => void openPhoto(a)} accessibilityRole="imagebutton" accessibilityLabel="Open photo">
+                  {a.uri ? (
+                    <Image source={{ uri: a.uri }} style={styles.thumb} />
+                  ) : (
+                    <View style={[styles.thumb, styles.remoteThumb]}>
+                      <Text style={styles.remoteThumbText}>☁ Photo</Text>
+                    </View>
+                  )}
                 </Pressable>
                 <Pressable
                   onPress={() => deleteAttachment(a.id, a.uri)}
@@ -147,8 +167,8 @@ export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React
               </View>
             ) : (
               <View key={a.id} style={styles.voice}>
-                <Pressable onPress={() => void player.current.play(a.uri)} style={styles.voicePlay} accessibilityLabel="Play voice note">
-                  <Text style={styles.voiceText}>▶ Voice note</Text>
+                <Pressable onPress={() => void playVoice(a)} style={styles.voicePlay} accessibilityLabel="Play voice note">
+                  <Text style={styles.voiceText}>▶ Voice note{a.uri ? '' : ' ☁'}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => deleteAttachment(a.id, a.uri)}
@@ -178,6 +198,8 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
   thumbWrap: { position: 'relative' },
   thumb: { width: 76, height: 76, borderRadius: layout.radius, backgroundColor: surfaces.raised },
+  remoteThumb: { alignItems: 'center', justifyContent: 'center', backgroundColor: surfaces.raised, borderWidth: 1, borderColor: surfaces.line },
+  remoteThumbText: { color: textTokens.dim, fontSize: 12, fontWeight: '600' },
   del: {
     position: 'absolute', top: -6, right: -6, width: 24, height: 24, borderRadius: 12,
     backgroundColor: '#8F1D28', alignItems: 'center', justifyContent: 'center',
@@ -191,7 +213,7 @@ const styles = StyleSheet.create({
   voicePlay: { minHeight: layout.minTapTarget, justifyContent: 'center' },
   voiceText: { color: brand.default, fontWeight: '700' },
   voiceDel: { minHeight: layout.minTapTarget, justifyContent: 'center', paddingHorizontal: 8 },
-  delText: { color: '#D9483B', fontWeight: '600' },
+  delText: { color: semantic.danger, fontWeight: '600' },
   modal: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
   full: { width: '92%', height: '80%' },
 });

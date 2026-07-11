@@ -12,7 +12,7 @@ import type { AuditItem } from '@/db/types';
 import type { Rating } from '@soteria/scoring-engine';
 import { reconcile, type SyncItem } from './reconcile';
 import type { MergeableItem, MergeResult } from '@/domain/conflict';
-import type { RemoteAdapter, RemoteAuditItem } from './remote';
+import { auditItemToRemote, type RemoteAdapter, type RemoteAuditItem } from './remote';
 
 /** The slice of the repo the engine needs. The real Repo satisfies this. */
 export interface SyncLocal {
@@ -127,13 +127,9 @@ export class SyncEngine {
     for (const { id, merged } of plan.pushToRemote) {
       const si = meta.get(id);
       if (!si) continue;
-      pushRows.push({
-        id: si.id, org_id: si.org_id, audit_id: si.audit_id, item_code: si.item_code, section_code: si.section_code,
-        applicable: merged.applicable, rating: merged.rating, observations: merged.observations,
-        recommendations: merged.recommendations, auditor_notes: merged.auditor_notes,
-        ai_generated: merged.ai_generated, updated_at: now,
-      });
-      localWrites.set(id, this.build(si, merged, 'synced', now)); // reflect the push locally
+      const built = this.build(si, merged, 'synced', now);
+      pushRows.push(auditItemToRemote(built, now)); // single projection — see remote.ts
+      localWrites.set(id, built); // reflect the push locally
     }
 
     if (localWrites.size) await this.local.applyMergedItems([...localWrites.values()]);
@@ -155,7 +151,11 @@ export class SyncEngine {
       applicable: merged.applicable, rating: merged.rating,
       observations: merged.observations, recommendations: merged.recommendations,
       auditor_notes: merged.auditor_notes, ai_generated: merged.ai_generated,
-      sync_state, updated_at,
+      sync_state,
+      // Persist the PEER's candidate while conflicted so the lead auditor can
+      // compare and resolve; cleared the moment the item stops being conflicted.
+      conflict_rating: sync_state === 'needs_resolution' ? (merged.ratingCandidates?.remote ?? null) : null,
+      updated_at,
     };
   }
 }

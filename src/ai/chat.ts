@@ -6,6 +6,7 @@
  * is unconfigured the surface is disabled so nothing ever blocks offline (#3).
  */
 import { getSupabase } from '@/db/supabase';
+import { unwrapFunctionError } from './invokeError';
 
 export { isAiConfigured } from './client';
 
@@ -45,7 +46,7 @@ export async function askSoteria(
     }>('soteria-chat', {
       body: { question, history, jurisdiction },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: (await unwrapFunctionError(error, 'Soteria is unavailable right now.')).message };
     if (!data?.text) return { ok: false, error: data?.error ?? 'No answer returned.' };
     return { ok: true, text: data.text, citations: data.citations ?? [] };
   } catch (e) {

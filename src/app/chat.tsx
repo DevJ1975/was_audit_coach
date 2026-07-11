@@ -20,7 +20,7 @@ import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Mono } from '@/components/ui';
 import { askSoteria, isAiConfigured, type ChatTurn, type SoteriaCitation } from '@/ai/chat';
-import { brand, layout, surfaces, text as textTokens } from '@/theme/tokens';
+import { brand, layout, surfaces, text as textTokens, semantic } from '@/theme/tokens';
 
 interface Message extends ChatTurn {
   citations?: SoteriaCitation[];
@@ -85,9 +85,27 @@ export default function ChatScreen(): React.ReactElement {
     }
   }
 
+  function newConversation(): void {
+    setMessages([]);
+    setError(null);
+    setInput('');
+  }
+
   return (
     <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
-      <Stack.Screen options={{ title: 'Soteria — OSHA reference' }} />
+      <Stack.Screen
+        options={{
+          title: 'Soteria — OSHA reference',
+          // Escape hatch for "conversation too long" — without it the only way
+          // to start fresh was leaving and re-entering the screen.
+          headerRight: () =>
+            messages.length > 0 ? (
+              <Text style={styles.newChat} onPress={newConversation} accessibilityRole="button">
+                New chat
+              </Text>
+            ) : null,
+        }}
+      />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -232,7 +250,9 @@ const styles = StyleSheet.create({
   citationMeta: { color: textTokens.faint, fontSize: 11 },
   busyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   busyText: { color: textTokens.dim, fontSize: 13 },
-  error: { color: '#E7C33B', fontSize: 13, paddingHorizontal: 4 },
+  error: { color: semantic.warn, fontSize: 13, paddingHorizontal: 4 },
+  // paddingVertical 17 + 14pt line ≈ 48pt target in the header (NN #10).
+  newChat: { color: brand.default, fontWeight: '600', paddingHorizontal: 16, paddingVertical: 17, fontSize: 14 },
   offline: {
     color: textTokens.dim,
     fontSize: 12,

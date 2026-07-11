@@ -12,7 +12,7 @@ function local(id: string, o: Partial<AuditItem> = {}): AuditItem {
   return {
     id, org_id: 'o', audit_id: 'a', item_code: id, section_code: 'CS', applicable: true,
     rating: null, observations: '', recommendations: '', auditor_notes: '', ai_generated: false,
-    sync_state: 'local', updated_at: T1, ...o,
+    sync_state: 'local', conflict_rating: null, updated_at: T1, ...o,
   };
 }
 function remote(id: string, o: Partial<RemoteAuditItem> = {}): RemoteAuditItem {
@@ -40,6 +40,11 @@ class FakeRemote implements RemoteAdapter {
   }
   async upsertAuditItems(items: RemoteAuditItem[]) { for (const it of items) this.rows.set(it.id, it); }
   async upsertAudit() {}
+  async pullAudits() { return []; }
+  async pullScopingAnswers() { return []; }
+  async upsertScopingAnswers() {}
+  async upsertCorrectiveActions() {}
+  async insertDisclosures() {}
   async insertEvents() {}
 }
 
@@ -99,6 +104,7 @@ describe('SyncEngine.syncAudit', () => {
     const applied = l.items.get('X');
     expect(applied?.sync_state).toBe('needs_resolution');
     expect(applied?.rating).toBe('Very High'); // local value retained
+    expect(applied?.conflict_rating).toBe('Moderate'); // peer candidate persisted for the resolve UI
     expect(r.rows.get('X')?.rating).toBe('Moderate'); // remote untouched
   });
 
