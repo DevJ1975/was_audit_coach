@@ -32,6 +32,28 @@ prints `✓ RLS isolation verified`. It checks:
 - Seed the WLS org: `insert into orgs (id, slug, name) values ('wls','wls','Workplace Learning System');`
 - Conflict policy: `src/domain/conflict.ts` (LWW per field, rating → needs_resolution).
 
+## AI Edge Functions
+
+Three server-side AI surfaces; the Anthropic key lives only in function secrets.
+
+| Function | Surface | Notes |
+| --- | --- | --- |
+| `ai-draft` | Observation polish · recommendation draft · per-item ARIA Q&A | Single-shot Messages API |
+| `soteria-chat` | Compliance agent — corpus-grounded OSHA Q&A with verified citations | Tool-use loop over `search_regulations` |
+| `audit-coach` | Audit Coach — technique mentor inside the audit execution screens | Proxies a pre-built Anthropic **managed agent** (Sessions API); conversation memory lives in the Anthropic session, bound to the creating user |
+
+```bash
+supabase functions deploy ai-draft soteria-chat audit-coach
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...        # required by all three
+supabase secrets set VOYAGE_API_KEY=pa-...               # optional (soteria-chat hybrid retrieval)
+# audit-coach defaults to the Console-built coach agent; override if it changes:
+supabase secrets set AUDIT_COACH_AGENT_ID=agent_01LSVADVn3BaTjH4tuVwBHKS
+supabase secrets set AUDIT_COACH_ENV_ID=env_01N9MqLvzeMxZ7PbC7yjhBce
+```
+
+Metering: every call inserts an `ai_usage` row (`kind` ∈ observation_polish ·
+recommendation_draft · aria_coach · soteria_chat · audit_coach — migration 0004).
+
 ## Still to build (sync engine)
 
 The push/pull sync (outbox, `updated_at` cursors, attachment upload to the

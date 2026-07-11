@@ -1,7 +1,7 @@
 // Supabase Edge Function: soteria-chat (Phase C3, SOTERIA_CHAT_KB_PLAN.md)
 // Corpus-grounded OSHA Q&A. Claude runs an agentic loop over the
 // search_regulations hybrid-retrieval RPC (migration 0003); every regulatory
-// claim carries an inline [c:<chunk_id>] token that _shared/citations.ts
+// claim carries an inline [c:<chunk_id>] token that ./citations.ts
 // verifies against what was ACTUALLY retrieved this call — an answer can never
 // ship an invented citation. Returns text + citations only: like ai-draft,
 // no field in this contract can touch a rating (Non-Negotiable #2).
@@ -16,7 +16,7 @@
 // @ts-nocheck  (Deno runtime + npm: specifiers; not part of the app's tsconfig)
 import Anthropic from 'npm:@anthropic-ai/sdk@0.68.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { resolveCitations } from '../_shared/citations.ts';
+import { resolveCitations } from './citations.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

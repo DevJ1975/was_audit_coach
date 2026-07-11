@@ -17,7 +17,8 @@ import { resolve } from 'node:path';
 import { FEDERAL_PARTS, fetchPartXml, latestIssueDate } from './ecfr';
 import { parsePartXml } from './parse';
 import { chunkDocument } from './chunk';
-import { canLoad, loadCorpus } from './load';
+import { canLoad, embedMissing, loadCorpus } from './load';
+import { corpusSqlBatches } from './gen_sql';
 import type { RegChunk, RegDocument } from './types';
 
 function arg(name: string): string | undefined {
@@ -27,6 +28,16 @@ function arg(name: string): string | undefined {
 const flag = (name: string): boolean => process.argv.includes(`--${name}`);
 
 async function main(): Promise<void> {
+  // Backfill mode: embed already-loaded chunks whose embedding is NULL (e.g.
+  // the corpus was loaded FTS-only before a Voyage key existed). The hash-diff
+  // would otherwise never revisit unchanged documents.
+  if (flag('embed-missing')) {
+    if (!canLoad()) throw new Error('--embed-missing needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.');
+    const n = await embedMissing((m) => console.log(m));
+    console.log(`embedded ${n} previously-unembedded chunks`);
+    return;
+  }
+
   const parts = arg('parts')?.split(',').map((p) => p.trim()) ?? [...FEDERAL_PARTS];
   const date = arg('date') ?? (await latestIssueDate());
   const dryRun = flag('dry-run');
@@ -57,6 +68,20 @@ async function main(): Promise<void> {
     );
     writeFileSync(resolve(dir, 'chunks.jsonl'), chunks.map((c) => JSON.stringify(c)).join('\n'));
     console.log(`wrote JSONL artifacts to ${dir}`);
+  }
+
+  // No-service-key load path: batched idempotent SQL for the SQL editor / MCP.
+  const sqlOut = arg('sql-out');
+  if (sqlOut) {
+    const dir = resolve(process.cwd(), sqlOut);
+    mkdirSync(dir, { recursive: true });
+    const batches = corpusSqlBatches(documents, chunks);
+    for (const b of batches) writeFileSync(resolve(dir, b.name), b.sql);
+    console.log(
+      `wrote ${batches.length} SQL batches to ${dir} ` +
+        `(${batches.reduce((n, b) => n + b.docCount, 0)} docs, ` +
+        `${batches.reduce((n, b) => n + b.chunkCount, 0)} chunks)`,
+    );
   }
 
   if (dryRun) return;

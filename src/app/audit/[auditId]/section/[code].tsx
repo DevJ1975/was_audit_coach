@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Screen, Card, Row, Subtitle, Mono } from '@/components/ui';
+import { Screen, Card, Row, Button, Subtitle, Mono } from '@/components/ui';
 import { ScoreReadout } from '@/components/ScoreReadout';
 import { RatingDot, SifBadge } from '@/components/badges';
 import { useAuditData } from '@/hooks/useAudit';
@@ -34,6 +34,17 @@ export default function ItemListScreen(): React.ReactElement {
             tier={s.tier}
             ratedCount={s.ratedCount}
             itemCount={s.itemCount}
+          />
+          {/* Audit Coach — technique mentor for working this checklist section. */}
+          <Button
+            label="Coach: how to audit this section"
+            variant="ghost"
+            onPress={() =>
+              router.push({
+                pathname: `/audit/${auditId}/coach`,
+                params: { section: code },
+              })
+            }
           />
         </Card>
       ) : null}

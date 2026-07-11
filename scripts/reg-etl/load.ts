@@ -42,6 +42,37 @@ async function existingHashes(db: SupabaseClient, parts: string[]) {
   }
 }
 
+/**
+ * Embed chunks loaded FTS-only (embedding IS NULL) — the backfill for a corpus
+ * loaded before VOYAGE_API_KEY existed. Returns the number embedded.
+ */
+export async function embedMissing(log: (msg: string) => void): Promise<number> {
+  if (!hasVoyageKey()) throw new Error('--embed-missing needs VOYAGE_API_KEY.');
+  const db = serviceClient();
+  const PAGE = 200;
+  let total = 0;
+  for (;;) {
+    const { data, error } = await db
+      .from('reg_chunks')
+      .select('id, text')
+      .is('embedding', null)
+      .order('id')
+      .limit(PAGE);
+    if (error) throw new Error(`reg_chunks read failed: ${error.message}`);
+    if (!data || data.length === 0) return total;
+    const vectors = await embedDocuments(data.map((c) => c.text));
+    for (let i = 0; i < data.length; i++) {
+      const { error: upErr } = await db
+        .from('reg_chunks')
+        .update({ embedding: vectors[i] })
+        .eq('id', data[i]!.id);
+      if (upErr) throw new Error(`reg_chunks update failed: ${upErr.message}`);
+    }
+    total += data.length;
+    log(`  embedded ${total} chunks…`);
+  }
+}
+
 export interface LoadResult {
   plan: LoadPlan;
   chunksWritten: number;

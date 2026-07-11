@@ -275,6 +275,18 @@ export default function ItemCardScreen(): React.ReactElement {
       <Card accent={brand.default}>
         <Subtitle style={{ color: brand.default }}>Evidence protocol</Subtitle>
         <Body>{lib.evidence_protocol}</Body>
+        {/* Audit Coach (managed agent) — HOW to audit this; distinct from Soteria
+            (regulation text) and ARIA (this item's text only). */}
+        <Button
+          label="Coach: how do I audit this?"
+          variant="ghost"
+          onPress={() =>
+            router.push({
+              pathname: `/audit/${auditId}/coach`,
+              params: { section: item.section_code, item: item.item_code },
+            })
+          }
+        />
       </Card>
 
       {/* Rating — auditor-only (Non-Negotiable #2) */}

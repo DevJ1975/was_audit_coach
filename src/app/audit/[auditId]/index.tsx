@@ -43,6 +43,8 @@ export default function SectionListScreen(): React.ReactElement {
             onPress={() => router.push(`/audit/${auditId}/report`)}
           />
           <Button label="CA tracker" variant="secondary" onPress={() => router.push(`/audit/${auditId}/corrective-actions`)} />
+          {/* Audit Coach — technique mentor (managed agent), distinct from Soteria chat. */}
+          <Button label="Coach" variant="secondary" onPress={() => router.push(`/audit/${auditId}/coach`)} />
           {available ? (
             <Button label={syncing ? 'Syncing…' : 'Sync'} variant="ghost" onPress={sync} disabled={syncing} />
           ) : null}
