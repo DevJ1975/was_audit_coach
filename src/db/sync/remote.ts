@@ -152,6 +152,8 @@ export interface RemoteAdapter {
   upsertAudit(audit: RemoteAudit): Promise<void>;
   /** All audit headers visible to this user's org (RLS-scoped). */
   pullAudits(): Promise<RemoteAudit[]>;
+  /** Delete an audit server-side (children cascade via FKs). */
+  deleteAudit(auditId: string): Promise<void>;
   /** Scoping answers for one audit. */
   pullScopingAnswers(auditId: string): Promise<RemoteScopingAnswer[]>;
   /** Upsert scoping answers (PK audit_id+question_key; idempotent). */

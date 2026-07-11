@@ -41,6 +41,7 @@ class FakeRemote implements RemoteAdapter {
   async upsertAuditItems(items: RemoteAuditItem[]) { for (const it of items) this.rows.set(it.id, it); }
   async upsertAudit() {}
   async pullAudits() { return []; }
+  async deleteAudit() {}
   async pullScopingAnswers() { return []; }
   async upsertScopingAnswers() {}
   async upsertCorrectiveActions() {}

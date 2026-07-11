@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Divider, Text } from 'react-native-paper';
@@ -8,6 +8,7 @@ import { PrivilegeBanner } from '@/components/badges';
 import { useAuditData } from '@/hooks/useAudit';
 import { useSync } from '@/hooks/useSync';
 import { useConflicts } from '@/hooks/useConflicts';
+import { useDeleteAudit } from '@/hooks/useDeleteAudit';
 import { useRepo, useSession } from '@/db/RepoProvider';
 import { sectionNames, sectionOrder } from '@/seed';
 import { surfaces, text as textTokens, semantic, ratingColors } from '@/theme/tokens';
@@ -30,6 +31,23 @@ export default function SectionListScreen(): React.ReactElement {
   const { audit, items, score, findings, reload } = useAuditData(auditId);
   const { sync, syncing, result, error, available, signInNeeded } = useSync(auditId);
   const conflictQ = useConflicts(auditId);
+  const del = useDeleteAudit();
+  // Two-tap destructive confirm (no Alert — react-native-web doesn't support
+  // multi-button alerts, and a second deliberate tap suits gloved hands).
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (confirmTimer.current) clearTimeout(confirmTimer.current); }, []);
+
+  async function onDeletePress(): Promise<void> {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      confirmTimer.current = setTimeout(() => setConfirmingDelete(false), 6000);
+      return;
+    }
+    if (confirmTimer.current) clearTimeout(confirmTimer.current);
+    setConfirmingDelete(false);
+    if (await del.deleteAudit(auditId)) router.replace('/');
+  }
 
   // Derived from the items this screen already loads — no second table scan.
   const conflicts = items.filter((it) => it.sync_state === 'needs_resolution');
@@ -103,6 +121,22 @@ export default function SectionListScreen(): React.ReactElement {
             ) : null}
           </View>
         ) : null}
+
+        <View style={styles.actions}>
+          <Button
+            label={
+              del.deleting
+                ? 'Deleting…'
+                : confirmingDelete
+                  ? (del.cloudDelete ? 'Tap again: delete from device AND cloud' : 'Tap again: delete from this device')
+                  : 'Delete audit'
+            }
+            variant="ghost"
+            onPress={() => void onDeletePress()}
+            disabled={del.deleting}
+          />
+        </View>
+        {del.error ? <Text style={styles.syncError}>Delete failed: {del.error}</Text> : null}
 
         {itemSummary && !itemSummary.skipped ? (
           <Text style={styles.syncNote}>

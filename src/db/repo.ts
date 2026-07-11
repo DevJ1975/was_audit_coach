@@ -56,6 +56,16 @@ export interface Repo {
   listAudits(org_id: string): Promise<Audit[]>;
   setAuditStatus(id: string, status: AuditStatus, actor_id: string): Promise<void>;
 
+  /**
+   * Delete an audit and ALL its local children (items, events, attachments,
+   * CAs, disclosures, scoping). Returns the local evidence file uris so the
+   * caller can best-effort delete the files (the repo owns rows, not files).
+   * Remote deletion is the caller's concern (sync layer) — server FKs cascade.
+   */
+  deleteAudit(id: string): Promise<{ evidenceUris: string[] }>;
+  /** Every attachment row for an audit (incl. tombstones) — delete/cleanup use. */
+  listAuditAttachments(audit_id: string): Promise<Attachment[]>;
+
   // --- Scoping --------------------------------------------------------------
   getScopingAnswers(audit_id: string): Promise<ScopingAnswer[]>;
   /**

@@ -149,6 +149,26 @@ Deno.serve(async (req: Request) => {
   const usage = { input_tokens: 0, output_tokens: 0 };
   let finalText = '';
 
+  // Per-org usage metering. Failed turns still consumed tokens (a 502 after
+  // five tool rounds is real spend), so EVERY exit that follows a model call
+  // logs. Best-effort — metering must never block or break a response.
+  const logUsage = async (): Promise<void> => {
+    if (!org_id || (usage.input_tokens === 0 && usage.output_tokens === 0)) return;
+    try {
+      const { error } = await supabase.from('ai_usage').insert({
+        org_id,
+        user_id: user.id,
+        kind: 'soteria_chat',
+        model,
+        input_tokens: usage.input_tokens,
+        output_tokens: usage.output_tokens,
+      });
+      if (error) console.error('ai_usage insert failed:', error.message);
+    } catch (e) {
+      console.error('ai_usage insert threw:', e instanceof Error ? e.message : String(e));
+    }
+  };
+
   try {
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
       const msg = await anthropic.messages.create({
@@ -219,25 +239,19 @@ Deno.serve(async (req: Request) => {
       messages.push({ role: 'user', content: results });
     }
   } catch (e) {
+    await logUsage();
     return json({ error: `AI request failed: ${e instanceof Error ? e.message : String(e)}` }, 502);
   }
 
-  if (!finalText) return json({ error: 'No answer produced — try rephrasing.' }, 502);
+  if (!finalText) {
+    await logUsage();
+    return json({ error: 'No answer produced — try rephrasing.' }, 502);
+  }
 
   // Structural guarantee: only citations retrieved this call survive.
   const { text, citations } = resolveCitations(finalText, retrieved);
 
-  // Per-org usage metering (best-effort; never blocks the response).
-  if (org_id) {
-    await supabase.from('ai_usage').insert({
-      org_id,
-      user_id: user.id,
-      kind: 'soteria_chat',
-      model,
-      input_tokens: usage.input_tokens,
-      output_tokens: usage.output_tokens,
-    });
-  }
+  await logUsage();
 
   return json({ text, citations });
 });

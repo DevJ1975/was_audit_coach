@@ -138,6 +138,29 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
       a.updated_at = deps.now();
     },
 
+    async deleteAudit(id) {
+      const itemIds = new Set([...items.values()].filter((i) => i.audit_id === id).map((i) => i.id));
+      const evidenceUris: string[] = [];
+      for (const [aid, a] of [...attachments]) {
+        if (itemIds.has(a.audit_item_id)) {
+          if (a.uri) evidenceUris.push(a.uri);
+          attachments.delete(aid);
+        }
+      }
+      for (const iid of itemIds) items.delete(iid);
+      for (let i = events.length - 1; i >= 0; i--) if (events[i]!.audit_id === id) events.splice(i, 1);
+      for (const [cid, ca] of [...cas]) if (ca.audit_id === id) cas.delete(cid);
+      for (let i = disclosures.length - 1; i >= 0; i--) if (disclosures[i]!.audit_id === id) disclosures.splice(i, 1);
+      scoping.delete(id);
+      audits.delete(id);
+      return { evidenceUris };
+    },
+
+    async listAuditAttachments(audit_id) {
+      const itemIds = new Set([...items.values()].filter((i) => i.audit_id === audit_id).map((i) => i.id));
+      return [...attachments.values()].filter((a) => itemIds.has(a.audit_item_id));
+    },
+
     async getScopingAnswers(audit_id) {
       return scoping.get(audit_id) ?? [];
     },

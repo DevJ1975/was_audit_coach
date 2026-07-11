@@ -82,6 +82,13 @@ export function createSupabaseRemote(): RemoteAdapter {
       }));
     },
 
+    async deleteAudit(auditId: string) {
+      const supabase = getSupabase();
+      if (!supabase) return;
+      const { error } = await supabase.from('audits').delete().eq('id', auditId);
+      if (error) throw new Error(`deleteAudit: ${error.message}`);
+    },
+
     async pullScopingAnswers(auditId) {
       const supabase = getSupabase();
       if (!supabase) return [];

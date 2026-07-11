@@ -10,12 +10,15 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://tvgutsihvyjflqsihxxi.supabase.co",
         "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_bZbHjXmN3YhThzQGmocTyA_XdUBaqJa"
-      }
+      },
+      "developmentClient": true
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "ios": { "simulator": true },
+      "ios": {
+        "simulator": true
+      },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://tvgutsihvyjflqsihxxi.supabase.co",
         "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_bZbHjXmN3YhThzQGmocTyA_XdUBaqJa"

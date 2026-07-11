@@ -8,6 +8,7 @@ import { AttachmentStrip } from '@/components/AttachmentStrip';
 import { SifBadge, SavedFlash, type SaveStatus } from '@/components/badges';
 import { useRepo, useSession } from '@/db/RepoProvider';
 import { useAuditItem, useAuditData } from '@/hooks/useAudit';
+import { useDictation } from '@/hooks/useDictation';
 import { libraryItem } from '@/seed';
 import { compareByCode } from '@/domain/ordering';
 import { requestDraft, isAiConfigured } from '@/ai/client';
@@ -73,6 +74,34 @@ export default function ItemCardScreen(): React.ReactElement {
   const [aiError, setAiError] = useState<string | null>(null);
   const [ariaQuestion, setAriaQuestion] = useState('');
   const [ariaAnswer, setAriaAnswer] = useState<string | null>(null);
+
+  // Web dictation (NN #10 voice-first). One mic, aimed at the field whose
+  // button was tapped; finals append with a space. Native uses the OS
+  // keyboard's mic key, so the buttons render only when supported (web).
+  const dictationTarget = useRef<TextField>('observations');
+  const dictation = useDictation((t) => {
+    const field = dictationTarget.current;
+    const apply = (prev: string): string => (prev ? `${prev} ${t}` : t);
+    if (field === 'observations') setObs((prev) => { const v = apply(prev); scheduleSave(field, v); return v; });
+    else if (field === 'recommendations') setRec((prev) => { const v = apply(prev); scheduleSave(field, v); return v; });
+    else setNotes((prev) => { const v = apply(prev); scheduleSave(field, v); return v; });
+  });
+
+  function micFor(field: TextField): React.ReactElement | null {
+    if (!dictation.supported) return null;
+    const active = dictation.listening && dictationTarget.current === field;
+    return (
+      <Button
+        label={active ? '■ Stop dictation' : '🎙 Dictate'}
+        variant={active ? 'primary' : 'ghost'}
+        onPress={() => {
+          if (!active && dictation.listening) dictation.toggle(); // stop other field first
+          dictationTarget.current = field;
+          dictation.toggle();
+        }}
+      />
+    );
+  }
 
   const seededFor = useRef<string | null>(null);
   const mounted = useRef(true);
@@ -325,6 +354,7 @@ export default function ItemCardScreen(): React.ReactElement {
             onPress={polish}
             disabled={!aiOn || aiBusy !== null || !obs.trim()}
           />
+          {micFor('observations')}
           {!aiOn ? <Text style={styles.aiHint}>Connects when online</Text> : null}
         </View>
         {aiDraft?.field === 'observations' ? (
@@ -355,6 +385,7 @@ export default function ItemCardScreen(): React.ReactElement {
             onPress={draftRecommendation}
             disabled={!aiOn || aiBusy !== null}
           />
+          {micFor('recommendations')}
           {!aiOn ? <Text style={styles.aiHint}>Connects when online</Text> : null}
         </View>
         {aiDraft?.field === 'recommendations' ? (
@@ -411,6 +442,7 @@ export default function ItemCardScreen(): React.ReactElement {
             scheduleSave('auditor_notes', t);
           }}
         />
+        <View style={styles.aiRow}>{micFor('auditor_notes')}</View>
       </Card>
 
       {/* Evidence capture — photo + voice (Phase 2). A finding can carry proof. */}

@@ -96,7 +96,20 @@ function pct(p: number | null): string {
 }
 
 /** Render the report as a self-contained print-ready HTML document. */
-export function renderReportHtml(model: ReportModel): string {
+/** Per-finding evidence prepared by the caller (data URIs — this module stays
+ *  pure). Keyed by audit_item_id. */
+export interface ReportEvidence {
+  [audit_item_id: string]: {
+    /** Embedded photo data URIs (caller caps count/size). */
+    photos: string[];
+    /** Voice-note transcriptions, when captured. */
+    transcriptions: string[];
+    /** Evidence that exists but could not be embedded (cloud-only, unreadable). */
+    unembedded: number;
+  };
+}
+
+export function renderReportHtml(model: ReportModel, evidence?: ReportEvidence): string {
   const watermark = model.privileged
     ? `<div class="wm">PRIVILEGED &amp; CONFIDENTIAL — ATTORNEY WORK PRODUCT</div>`
     : '';
@@ -114,6 +127,17 @@ export function renderReportHtml(model: ReportModel): string {
     )
     .join('');
 
+  const evidenceBlock = (itemId: string): string => {
+    const ev = evidence?.[itemId];
+    if (!ev || (ev.photos.length === 0 && ev.transcriptions.length === 0 && ev.unembedded === 0)) return '';
+    const imgs = ev.photos.map((p) => `<img src="${p}" alt="evidence photo"/>`).join('');
+    const notes = ev.transcriptions.map((t) => `<div class="ev-note">🎙 ${esc(t)}</div>`).join('');
+    const more = ev.unembedded > 0
+      ? `<div class="ev-more">+${ev.unembedded} more evidence item${ev.unembedded === 1 ? '' : 's'} on file</div>`
+      : '';
+    return `<div class="lbl">Evidence</div>${imgs ? `<div class="ev-imgs">${imgs}</div>` : ''}${notes}${more}`;
+  };
+
   const findingRows = model.findings
     .map(
       (f) => `<div class="finding" style="border-left:5px solid ${ratingColors[f.rating]}">
@@ -124,6 +148,7 @@ export function renderReportHtml(model: ReportModel): string {
         <div class="cite mono">${esc(f.citation)}</div>
         ${f.observations ? `<div class="lbl">Observations</div><div>${esc(f.observations)}</div>` : ''}
         ${f.recommendations ? `<div class="lbl">Recommendations</div><div>${esc(f.recommendations)}</div>` : ''}
+        ${evidenceBlock(f.audit_item_id)}
       </div>`,
     )
     .join('');
@@ -147,6 +172,10 @@ export function renderReportHtml(model: ReportModel): string {
     th { background: #f2f4f6; }
     .summary { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
     .pill { font-size: 12px; background: #f2f4f6; border-radius: 999px; padding: 3px 10px; }
+    .ev-imgs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+    .ev-imgs img { max-width: 180px; max-height: 140px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; }
+    .ev-note { font-size: 12px; font-style: italic; margin: 2px 0; }
+    .ev-more { font-size: 11px; color: #5F6E7D; }
     .dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 5px; vertical-align: middle; }
     .kpi { font-size: 13px; margin: 6px 0; }
     .finding { padding: 8px 10px; margin: 8px 0; background: #fafbfc; border-radius: 6px; }
