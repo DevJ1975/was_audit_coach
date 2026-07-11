@@ -54,14 +54,21 @@ export function getDatabase(): Promise<DB> {
 // an actionable message while its worker is still healthy.
 
 const TAB_LOCK_NAME = 'soteria.db.tab-owner';
+const OWNER_CHANNEL = 'soteria.db.owner';
 
 const MULTI_TAB_MESSAGE =
-  'Your audit database is open in another tab or window of this app ' +
-  '(including an installed home-screen copy). Close every other copy, then reload this page.';
+  'Your audit database is open in another tab or window of this app, and that copy ' +
+  'did not respond to a hand-over (it may be frozen). Close every other copy of the ' +
+  'app — or fully restart the browser — then reload this page.';
 
 const ENGINE_FAILED_MESSAGE =
   'The on-device storage engine could not start. Fully close every tab and window of this app ' +
   '— or restart the browser — then reopen it.';
+
+/** Shown by the OLD tab after it hands the database to a newer tab. */
+export const YIELDED_MESSAGE =
+  'You opened the app in another tab, so this tab handed over the audit database. ' +
+  'Reload to use the app here instead.';
 
 /** Minimal Web Locks surface — avoids depending on TS DOM lib types. */
 interface WebLockManager {
@@ -72,7 +79,27 @@ interface WebLockManager {
   ): Promise<unknown>;
 }
 
+interface ChannelLike {
+  postMessage(msg: unknown): void;
+  close(): void;
+  onmessage: ((e: { data?: unknown }) => void) | null;
+}
+
 let tabLockHeld = false;
+/** Resolving this releases the Web Lock (set while we hold it). */
+let releaseTabLock: (() => void) | null = null;
+let ownerChannel: ChannelLike | null = null;
+let yieldedCallback: (() => void) | null = null;
+
+/** RepoProvider registers here to flip its UI when this tab yields the DB. */
+export function onDatabaseYielded(cb: () => void): void {
+  yieldedCallback = cb;
+}
+
+function newChannel(): ChannelLike | null {
+  const Ctor = (globalThis as { BroadcastChannel?: new (name: string) => ChannelLike }).BroadcastChannel;
+  return Ctor ? new Ctor(OWNER_CHANNEL) : null;
+}
 
 /** One ifAvailable grab of the tab lock. */
 function tryAcquireTabLock(locks: WebLockManager): Promise<'acquired' | 'blocked' | 'error'> {
@@ -80,11 +107,66 @@ function tryAcquireTabLock(locks: WebLockManager): Promise<'acquired' | 'blocked
     locks
       .request(TAB_LOCK_NAME, { ifAvailable: true }, (lock) => {
         resolve(lock !== null ? 'acquired' : 'blocked');
-        // Hold the lock until the page unloads (the browser releases it with
-        // the OPFS handles) so sibling tabs fail fast instead of wedging.
-        return lock ? new Promise<never>(() => {}) : undefined;
+        if (!lock) return undefined;
+        // Hold the lock until the page unloads OR we deliberately yield it to
+        // a newer tab (releaseTabLock resolves this promise).
+        return new Promise<void>((release) => {
+          releaseTabLock = release;
+        });
       })
       .catch(() => resolve('error')); // lock machinery failed — let the open proceed
+  });
+}
+
+/**
+ * While owning the DB, listen for a newer tab's takeover request: close the
+ * database, release the lock, tell the new tab to proceed, and flip this
+ * tab's UI to "reload to take it back" — the WhatsApp-Web hand-over pattern.
+ * Without this, a copy forgotten on another desktop blocked the app with a
+ * scavenger hunt for the hidden tab.
+ */
+function listenForTakeover(): void {
+  ownerChannel?.close();
+  ownerChannel = newChannel();
+  if (!ownerChannel) return;
+  ownerChannel.onmessage = (e) => {
+    if ((e.data as { type?: string } | undefined)?.type !== 'claim' || !tabLockHeld) return;
+    void (async () => {
+      tabLockHeld = false;
+      try {
+        const db = dbPromise ? await dbPromise.catch(() => null) : null;
+        await db?.closeAsync().catch(() => {});
+      } finally {
+        dbPromise = null;
+        releaseTabLock?.();
+        releaseTabLock = null;
+        ownerChannel?.postMessage({ type: 'released' });
+        yieldedCallback?.();
+      }
+    })();
+  };
+}
+
+/** Ask the current owner to hand over; true when it says it released. */
+function requestHandover(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const ch = newChannel();
+    if (!ch) {
+      resolve(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      ch.close();
+      resolve(false);
+    }, 2000);
+    ch.onmessage = (e) => {
+      if ((e.data as { type?: string } | undefined)?.type === 'released') {
+        clearTimeout(timer);
+        ch.close();
+        resolve(true);
+      }
+    };
+    ch.postMessage({ type: 'claim' });
   });
 }
 
@@ -100,6 +182,15 @@ async function ensureSoleTabOwner(): Promise<void> {
     await new Promise((r) => setTimeout(r, 350));
     outcome = await tryAcquireTabLock(locks);
   }
+  // Still held — ask the owning tab to hand the database over, then retry.
+  if (outcome === 'blocked' && (await requestHandover())) {
+    outcome = await tryAcquireTabLock(locks);
+    if (outcome === 'blocked') {
+      // The owner released the lock but the grab lost a race — one more try.
+      await new Promise((r) => setTimeout(r, 250));
+      outcome = await tryAcquireTabLock(locks);
+    }
+  }
   if (outcome === 'blocked') {
     // Name the holder in the console so a field report can say WHICH context
     // owns the database (another tab's clientId) instead of us guessing.
@@ -113,7 +204,10 @@ async function ensureSoleTabOwner(): Promise<void> {
     }
     throw new Error(MULTI_TAB_MESSAGE);
   }
-  if (outcome === 'acquired') tabLockHeld = true;
+  if (outcome === 'acquired') {
+    tabLockHeld = true;
+    listenForTakeover();
+  }
 }
 
 /** Translate driver internals into operator-actionable messages. */
