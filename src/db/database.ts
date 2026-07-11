@@ -56,9 +56,12 @@ export function getDatabase(): Promise<DB> {
 const TAB_LOCK_NAME = 'soteria.db.tab-owner';
 
 const MULTI_TAB_MESSAGE =
-  'This app appears to be open in another browser tab or window. ' +
-  'Close the other tab, then reload this page. ' +
-  '(If no other tab is open, close every tab of this app and reopen it.)';
+  'Your audit database is open in another tab or window of this app ' +
+  '(including an installed home-screen copy). Close every other copy, then reload this page.';
+
+const ENGINE_FAILED_MESSAGE =
+  'The on-device storage engine could not start. Fully close every tab and window of this app ' +
+  '— or restart the browser — then reopen it.';
 
 /** Minimal Web Locks surface — avoids depending on TS DOM lib types. */
 interface WebLockManager {
@@ -97,7 +100,19 @@ async function ensureSoleTabOwner(): Promise<void> {
     await new Promise((r) => setTimeout(r, 350));
     outcome = await tryAcquireTabLock(locks);
   }
-  if (outcome === 'blocked') throw new Error(MULTI_TAB_MESSAGE);
+  if (outcome === 'blocked') {
+    // Name the holder in the console so a field report can say WHICH context
+    // owns the database (another tab's clientId) instead of us guessing.
+    try {
+      const q = await (locks as WebLockManager & { query?: () => Promise<{ held?: { name?: string; clientId?: string }[] }> })
+        .query?.();
+      const holders = (q?.held ?? []).filter((l) => l.name === TAB_LOCK_NAME).map((l) => l.clientId);
+      console.error('[db] tab lock held by client(s):', holders.length ? holders : '(unknown)');
+    } catch {
+      // diagnostics only
+    }
+    throw new Error(MULTI_TAB_MESSAGE);
+  }
   if (outcome === 'acquired') tabLockHeld = true;
 }
 
@@ -111,7 +126,7 @@ function toStorageError(e: unknown): Error {
     if (/InvalidStateError|invalid state|Invalid VFS state/i.test(text)) {
       // Keep the raw driver error findable for support; the UI shows guidance.
       console.error('[db] storage open failed:', text);
-      return new Error(MULTI_TAB_MESSAGE);
+      return new Error(`${ENGINE_FAILED_MESSAGE}\n(${text})`);
     }
   }
   return e instanceof Error ? e : new Error(String(e));
