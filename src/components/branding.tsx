@@ -11,6 +11,7 @@
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { versionLabel } from '@/version';
 import { text as textTokens, surfaces } from '@/theme/tokens';
 
 const WLS_RED = '#E1251B';
@@ -38,7 +39,9 @@ export function BrandLogo({ height = 34 }: { height?: number }): React.ReactElem
 export function AppFooter(): React.ReactElement {
   return (
     <View style={styles.footer}>
-      <Text style={styles.footerText}>Powered by Trainovate Technologies LLC</Text>
+      <Text style={styles.footerText}>
+        Powered by Trainovate Technologies LLC · {versionLabel()}
+      </Text>
     </View>
   );
 }
