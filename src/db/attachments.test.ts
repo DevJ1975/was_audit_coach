@@ -56,12 +56,16 @@ describe('attachment writes go through the repo and log immutable events (NN #6)
 });
 
 describe('attachment upload state drives sync behind the seam', () => {
-  it('a fresh attachment is pending upload, then marking synced clears it and records the path', async () => {
+  it('a fresh attachment is pending upload once its item has synced, then marking synced clears it', async () => {
     const { repo, itemId } = await firstItem();
     const att = await repo.addAttachment(itemId, 'photo', 'file:///p.jpg', 'u');
     expect(att.sync_state).toBe('local');
     expect(att.storage_path).toBeNull();
 
+    // FK-safe: evidence waits until its parent item exists server-side.
+    expect(await repo.listPendingUploads()).toEqual([]);
+    const item = (await repo.getAuditItem(itemId))!;
+    await repo.applyMergedItems([{ ...item, sync_state: 'synced' }]);
     expect((await repo.listPendingUploads()).map((a) => a.id)).toEqual([att.id]);
 
     await repo.markAttachmentSynced(att.id, 'wls/item/att.jpg');

@@ -81,6 +81,12 @@ export interface AuditItem {
   /** Set when the current observations/recommendations text was AI-drafted then accepted. */
   ai_generated: boolean;
   sync_state: ItemSyncState;
+  /**
+   * The PEER's rating while sync_state is 'needs_resolution' — surfaced so the
+   * lead auditor sees both candidates and picks (conflict policy). Null when
+   * not conflicted. Never rendered as the item's rating.
+   */
+  conflict_rating: Rating | null;
   updated_at: string;
 }
 

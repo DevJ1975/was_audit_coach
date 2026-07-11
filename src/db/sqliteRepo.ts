@@ -51,7 +51,8 @@ interface ItemRow {
   id: string; org_id: string; audit_id: string; item_code: string;
   section_code: string; applicable: number; rating: string | null;
   observations: string; recommendations: string; auditor_notes: string;
-  ai_generated: number; sync_state: string; updated_at: string;
+  ai_generated: number; sync_state: string; conflict_rating: string | null;
+  updated_at: string;
 }
 function toItem(r: ItemRow): AuditItem {
   return {
@@ -60,7 +61,9 @@ function toItem(r: ItemRow): AuditItem {
     rating: (r.rating as Rating | null) ?? null,
     observations: r.observations, recommendations: r.recommendations,
     auditor_notes: r.auditor_notes, ai_generated: bool(r.ai_generated),
-    sync_state: r.sync_state as AuditItem['sync_state'], updated_at: r.updated_at,
+    sync_state: r.sync_state as AuditItem['sync_state'],
+    conflict_rating: (r.conflict_rating as Rating | null) ?? null,
+    updated_at: r.updated_at,
   };
 }
 
@@ -187,6 +190,40 @@ export function createSqliteRepo(db: DB): Repo {
       }));
     },
 
+    async updateScopingAnswer(audit_id, question_key, answer, actor_id, ctx) {
+      const audit = await db.getFirstAsync<AuditRow>('SELECT * FROM audits WHERE id = ?', [audit_id]);
+      if (!audit) throw new Error(`audit not found: ${audit_id}`);
+      const ts = nowIso();
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(
+          `INSERT OR REPLACE INTO scoping_answers (audit_id, org_id, question_key, answer) VALUES (?, ?, ?, ?)`,
+          [audit_id, audit.org_id, question_key, int(answer)],
+        );
+        // Recompute applicability from the FULL answer set; flip only the
+        // deltas so each change is an auditable applicability_changed event.
+        const rows = await db.getAllAsync<{ question_key: string; answer: number }>(
+          'SELECT question_key, answer FROM scoping_answers WHERE audit_id = ?', [audit_id],
+        );
+        const answerMap = Object.fromEntries(rows.map((r) => [r.question_key, bool(r.answer)]));
+        const applicable = computeApplicableCodes(ctx.library, ctx.questions, answerMap);
+        // Narrow projection: 374 rows of free-text narrative are not needed
+        // to diff a boolean.
+        const itemRows = await db.getAllAsync<{ id: string; org_id: string; audit_id: string; item_code: string; applicable: number }>(
+          'SELECT id, org_id, audit_id, item_code, applicable FROM audit_items WHERE audit_id = ?', [audit_id],
+        );
+        for (const r of itemRows) {
+          const should = applicable.has(r.item_code);
+          if (bool(r.applicable) !== should) {
+            await db.runAsync(
+              "UPDATE audit_items SET applicable = ?, sync_state = CASE sync_state WHEN 'synced' THEN 'local' ELSE sync_state END, updated_at = ? WHERE id = ?",
+              [int(should), ts, r.id],
+            );
+            await insertEvent({ id: r.id, org_id: r.org_id, audit_id: r.audit_id }, 'applicability_changed', { applicable: should, via: question_key }, actor_id);
+          }
+        }
+      });
+    },
+
     async getAuditItems(audit_id) {
       const rows = await db.getAllAsync<ItemRow>(
         'SELECT * FROM audit_items WHERE audit_id = ?', [audit_id],
@@ -205,7 +242,10 @@ export function createSqliteRepo(db: DB): Repo {
       const before = await requireItem(audit_item_id);
       const ts = nowIso();
       await db.withTransactionAsync(async () => {
-        await db.runAsync('UPDATE audit_items SET rating = ?, updated_at = ? WHERE id = ?', [rating, ts, audit_item_id]);
+        await db.runAsync(
+          "UPDATE audit_items SET rating = ?, sync_state = CASE sync_state WHEN 'synced' THEN 'local' ELSE sync_state END, updated_at = ? WHERE id = ?",
+          [rating, ts, audit_item_id],
+        );
         await insertEvent(before, 'rating_set', { from: before.rating, to: rating }, actor_id);
       });
       return requireItem(audit_item_id);
@@ -217,7 +257,7 @@ export function createSqliteRepo(db: DB): Repo {
       const aiGenerated = field !== 'auditor_notes' ? !!opts?.ai_generated : before.ai_generated;
       await db.withTransactionAsync(async () => {
         await db.runAsync(
-          `UPDATE audit_items SET ${field} = ?, ai_generated = ?, updated_at = ? WHERE id = ?`,
+          `UPDATE audit_items SET ${field} = ?, ai_generated = ?, sync_state = CASE sync_state WHEN 'synced' THEN 'local' ELSE sync_state END, updated_at = ? WHERE id = ?`,
           [value, int(aiGenerated), ts, audit_item_id],
         );
         await insertEvent(before, TEXT_EVENT[field], { length: value.length, ai_generated: !!opts?.ai_generated }, actor_id);
@@ -233,7 +273,10 @@ export function createSqliteRepo(db: DB): Repo {
       if (before.applicable === applicable) return before;
       const ts = nowIso();
       await db.withTransactionAsync(async () => {
-        await db.runAsync('UPDATE audit_items SET applicable = ?, updated_at = ? WHERE id = ?', [int(applicable), ts, audit_item_id]);
+        await db.runAsync(
+          "UPDATE audit_items SET applicable = ?, sync_state = CASE sync_state WHEN 'synced' THEN 'local' ELSE sync_state END, updated_at = ? WHERE id = ?",
+          [int(applicable), ts, audit_item_id],
+        );
         await insertEvent(before, 'applicability_changed', { applicable }, actor_id);
       });
       return requireItem(audit_item_id);
@@ -250,14 +293,94 @@ export function createSqliteRepo(db: DB): Repo {
       await db.withTransactionAsync(async () => {
         for (const r of rows) {
           await db.runAsync(
-            `INSERT INTO audit_items (id, org_id, audit_id, item_code, section_code, applicable, rating, observations, recommendations, auditor_notes, ai_generated, sync_state, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `INSERT INTO audit_items (id, org_id, audit_id, item_code, section_code, applicable, rating, observations, recommendations, auditor_notes, ai_generated, sync_state, conflict_rating, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT(id) DO UPDATE SET applicable=excluded.applicable, rating=excluded.rating,
                observations=excluded.observations, recommendations=excluded.recommendations,
                auditor_notes=excluded.auditor_notes, ai_generated=excluded.ai_generated,
-               sync_state=excluded.sync_state, updated_at=excluded.updated_at`,
+               sync_state=excluded.sync_state, conflict_rating=excluded.conflict_rating,
+               updated_at=excluded.updated_at`,
             [r.id, r.org_id, r.audit_id, r.item_code, r.section_code, int(r.applicable), r.rating,
-             r.observations, r.recommendations, r.auditor_notes, int(r.ai_generated), r.sync_state, r.updated_at],
+             r.observations, r.recommendations, r.auditor_notes, int(r.ai_generated), r.sync_state,
+             r.conflict_rating, r.updated_at],
+          );
+        }
+      });
+    },
+
+    async resolveRatingConflict(audit_item_id, rating: Rating | null, actor_id) {
+      const before = await requireItem(audit_item_id);
+      const candidates = { local: before.rating, remote: before.conflict_rating };
+      const ts = nowIso();
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(
+          `UPDATE audit_items SET rating = ?, conflict_rating = NULL, sync_state = 'local', updated_at = ? WHERE id = ?`,
+          [rating, ts, audit_item_id],
+        );
+        await insertEvent(before, 'rating_set', { from: candidates.local, to: rating, resolution: true, candidates }, actor_id);
+      });
+      return requireItem(audit_item_id);
+    },
+
+    async listUnpushedEvents(audit_id) {
+      const rows = await db.getAllAsync<EventRow>(
+        'SELECT * FROM audit_item_events WHERE audit_id = ? AND pushed = 0 ORDER BY created_at', [audit_id],
+      );
+      return rows.map(toEvent);
+    },
+
+    async markEventsPushed(event_ids) {
+      if (event_ids.length === 0) return;
+      // SQLite parameter limit is 999 — chunk defensively (a long offline
+      // stretch on a 374-item audit can accumulate thousands of events).
+      for (let i = 0; i < event_ids.length; i += 500) {
+        const chunk = event_ids.slice(i, i + 500);
+        await db.runAsync(
+          `UPDATE audit_item_events SET pushed = 1 WHERE id IN (${chunk.map(() => '?').join(',')})`,
+          chunk,
+        );
+      }
+    },
+
+    async applyRemoteAudit(audit) {
+      await db.runAsync(
+        `INSERT INTO audits (id, org_id, facility_id, title, status, privileged, attorney_of_record, state_plan, library_version_id, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET title=excluded.title, status=excluded.status,
+           privileged=excluded.privileged, attorney_of_record=excluded.attorney_of_record,
+           state_plan=excluded.state_plan, facility_id=excluded.facility_id,
+           updated_at=excluded.updated_at`,
+        [audit.id, audit.org_id, audit.facility_id, audit.title, audit.status, int(audit.privileged),
+         audit.attorney_of_record, audit.state_plan, audit.library_version_id, audit.created_by,
+         audit.created_at, audit.updated_at],
+      );
+    },
+
+    async applyScopingAnswers(audit_id, answers) {
+      await db.withTransactionAsync(async () => {
+        // Full replace — a stale local ghost row would silently distort the
+        // applicability recompute (the inverted SCOPE rows make a ghost 'No'
+        // activate whole groups).
+        await db.runAsync('DELETE FROM scoping_answers WHERE audit_id = ?', [audit_id]);
+        for (const a of answers) {
+          await db.runAsync(
+            `INSERT INTO scoping_answers (audit_id, org_id, question_key, answer) VALUES (?, ?, ?, ?)`,
+            [audit_id, a.org_id, a.question_key, int(a.answer)],
+          );
+        }
+      });
+    },
+
+    async applyRemoteAttachments(rows) {
+      await db.withTransactionAsync(async () => {
+        for (const r of rows) {
+          // INSERT OR IGNORE: rows already known locally — including tombstones
+          // awaiting remote deletion — must not be resurrected or overwritten.
+          await db.runAsync(
+            `INSERT OR IGNORE INTO attachments (id, org_id, audit_item_id, kind, uri, storage_path, sync_state, deleted_at, transcription, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [r.id, r.org_id, r.audit_item_id, r.kind, r.uri, r.storage_path, r.sync_state,
+             r.deleted_at, r.transcription, r.created_at],
           );
         }
       });
@@ -308,8 +431,13 @@ export function createSqliteRepo(db: DB): Repo {
     },
 
     async listPendingUploads() {
+      // Parent row must exist server-side (item pushed, or conflicted — which
+      // implies a server row) or the attachments FK rejects the metadata.
       const rows = await db.getAllAsync<AttachmentRow>(
-        "SELECT * FROM attachments WHERE sync_state = 'local' AND deleted_at IS NULL ORDER BY created_at",
+        `SELECT a.* FROM attachments a
+           JOIN audit_items i ON i.id = a.audit_item_id
+          WHERE a.sync_state = 'local' AND a.deleted_at IS NULL AND i.sync_state != 'local'
+          ORDER BY a.created_at`,
       );
       return rows.map(toAttachment);
     },
@@ -357,6 +485,24 @@ export function createSqliteRepo(db: DB): Repo {
         `INSERT INTO disclosure_log (id, org_id, audit_id, actor_id, action, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
         [newId(), entry.org_id, entry.audit_id, entry.actor_id, entry.action, nowIso()],
       );
+    },
+
+    async listUnpushedDisclosures(audit_id) {
+      const rows = await db.getAllAsync<DisclosureLogEntry & { action: string }>(
+        'SELECT * FROM disclosure_log WHERE audit_id = ? AND pushed = 0 ORDER BY created_at', [audit_id],
+      );
+      return rows.map((r) => ({ ...r, action: r.action as DisclosureLogEntry['action'] }));
+    },
+
+    async markDisclosuresPushed(ids) {
+      if (ids.length === 0) return;
+      for (let i = 0; i < ids.length; i += 500) {
+        const chunk = ids.slice(i, i + 500);
+        await db.runAsync(
+          `UPDATE disclosure_log SET pushed = 1 WHERE id IN (${chunk.map(() => '?').join(',')})`,
+          chunk,
+        );
+      }
     },
 
     async listDisclosures(audit_id) {

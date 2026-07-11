@@ -2,7 +2,7 @@
   "name": "soteria-audit",
   "version": "0.1.0",
   "private": true,
-  "description": "Soteria Audit (WLS Audit Coach) — offline-first EHS audit platform. Scoring parity is sacred.",
+  "description": "Soteria Audit (WLS Audit Coach) \u2014 offline-first EHS audit platform. Scoring parity is sacred.",
   "main": "expo-router/entry",
   "workspaces": [
     "packages/*"
@@ -17,7 +17,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "etl": "tsx scripts/etl.ts",
     "gen:seed": "tsx scripts/gen_cloud_seed.ts",
-    "reg-etl": "tsx scripts/reg-etl/run.ts"
+    "reg-etl": "tsx scripts/reg-etl/run.ts",
+    "build:web": "expo export --platform web && node scripts/postexport.js"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

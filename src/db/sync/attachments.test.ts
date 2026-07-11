@@ -5,6 +5,9 @@ import type { Attachment } from '@/db/types';
 
 const CREATED = '2026-07-11T00:00:00.000Z';
 
+/** Items whose rows already exist server-side (FK-safe upload parents). */
+const PUSHED_ITEMS = ['item1'];
+
 function att(id: string, o: Partial<Attachment> = {}): Attachment {
   return {
     id, org_id: 'wls', audit_item_id: 'item1', kind: 'photo', uri: `file:///evidence/${id}.jpg`,
@@ -14,14 +17,26 @@ function att(id: string, o: Partial<Attachment> = {}): Attachment {
 
 class FakeLocal implements AttachmentLocal {
   rows = new Map<string, Attachment>();
-  constructor(seed: Attachment[] = []) { for (const a of seed) this.rows.set(a.id, a); }
-  async listPendingUploads() { return [...this.rows.values()].filter((a) => a.sync_state === 'local' && !a.deleted_at); }
+  /** Mirrors the repo's FK-safe join: parent item has reached the server. */
+  pushableItems = new Set<string>();
+  constructor(seed: Attachment[] = [], pushable: string[] = PUSHED_ITEMS) {
+    for (const a of seed) this.rows.set(a.id, a);
+    for (const it of pushable) this.pushableItems.add(it);
+  }
+  async listPendingUploads() {
+    return [...this.rows.values()].filter(
+      (a) => a.sync_state === 'local' && !a.deleted_at && this.pushableItems.has(a.audit_item_id),
+    );
+  }
   async markAttachmentSynced(id: string, storage_path: string) {
     const a = this.rows.get(id);
     if (a) this.rows.set(id, { ...a, sync_state: 'synced', storage_path });
   }
   async listPendingRemovals() { return [...this.rows.values()].filter((a) => a.deleted_at != null); }
   async purgeAttachment(id: string) { this.rows.delete(id); }
+  async applyRemoteAttachments(rows: Attachment[]) {
+    for (const r of rows) if (!this.rows.has(r.id)) this.rows.set(r.id, { ...r });
+  }
 }
 
 class FakeRemote implements EvidenceRemote {
@@ -29,6 +44,7 @@ class FakeRemote implements EvidenceRemote {
   objects = new Map<string, EvidenceBlob>();
   rows = new Map<string, RemoteAttachment>();
   isAvailable() { return this.available; }
+  async pullAttachments() { return [...this.rows.values()]; }
   async uploadEvidence(path: string, blob: EvidenceBlob) { this.objects.set(path, blob); }
   async upsertAttachments(rows: RemoteAttachment[]) { for (const r of rows) this.rows.set(r.id, r); }
   async deleteEvidence(paths: string[]) { for (const p of paths) this.objects.delete(p); }
@@ -60,9 +76,9 @@ describe('AttachmentSync.syncAttachments', () => {
   it('uploads a pending file, writes the metadata row, and flips it to synced', async () => {
     const local = new FakeLocal([att('a1')]);
     const remote = new FakeRemote();
-    const summary = await new AttachmentSync(local, remote, loadOk).syncAttachments();
+    const summary = await new AttachmentSync(local, remote, loadOk).syncAttachments('A');
 
-    expect(summary).toEqual({ skipped: false, uploaded: 1, removed: 0, failed: 0 });
+    expect(summary).toEqual({ skipped: false, uploaded: 1, removed: 0, pulled: 1, failed: 0 });
     expect(remote.objects.has('wls/item1/a1.jpg')).toBe(true);
     expect(remote.rows.get('a1')?.storage_path).toBe('wls/item1/a1.jpg');
     const row = local.rows.get('a1')!;
@@ -74,7 +90,7 @@ describe('AttachmentSync.syncAttachments', () => {
     const local = new FakeLocal([att('a1')]);
     const remote = new FakeRemote();
     remote.available = false;
-    const summary = await new AttachmentSync(local, remote, loadOk).syncAttachments();
+    const summary = await new AttachmentSync(local, remote, loadOk).syncAttachments('A');
 
     expect(summary.skipped).toBe(true);
     expect(remote.objects.size).toBe(0);
@@ -84,9 +100,9 @@ describe('AttachmentSync.syncAttachments', () => {
   it('isolates a per-file failure: the good file syncs, the bad one stays pending', async () => {
     const local = new FakeLocal([att('good'), att('bad', { uri: 'file:///evidence/bad.jpg' })]);
     const remote = new FakeRemote();
-    const summary = await new AttachmentSync(local, remote, loadThrowsOnBad).syncAttachments();
+    const summary = await new AttachmentSync(local, remote, loadThrowsOnBad).syncAttachments('A');
 
-    expect(summary).toEqual({ skipped: false, uploaded: 1, removed: 0, failed: 1 });
+    expect(summary).toEqual({ skipped: false, uploaded: 1, removed: 0, pulled: 1, failed: 1 });
     expect(local.rows.get('good')?.sync_state).toBe('synced');
     expect(local.rows.get('bad')?.sync_state).toBe('local'); // retried next sync
     expect(remote.rows.has('bad')).toBe(false);
@@ -99,20 +115,31 @@ describe('AttachmentSync.syncAttachments', () => {
     remote.objects.set('wls/item1/t1.jpg', { data: new Uint8Array([9]), contentType: 'image/jpeg' });
     remote.rows.set('t1', { id: 't1', org_id: 'wls', audit_item_id: 'item1', kind: 'photo', storage_path: 'wls/item1/t1.jpg', transcription: null, created_at: CREATED });
 
-    const summary = await new AttachmentSync(local, remote, loadOk).syncAttachments();
+    const summary = await new AttachmentSync(local, remote, loadOk).syncAttachments('A');
 
-    expect(summary).toEqual({ skipped: false, uploaded: 0, removed: 1, failed: 0 });
+    expect(summary).toEqual({ skipped: false, uploaded: 0, removed: 1, pulled: 0, failed: 0 });
     expect(remote.objects.has('wls/item1/t1.jpg')).toBe(false);
     expect(remote.rows.has('t1')).toBe(false);
     expect(local.rows.has('t1')).toBe(false); // purged
+  });
+
+  it('holds back evidence whose parent item has not reached the server (FK-safe)', async () => {
+    const local = new FakeLocal([att('w1', { audit_item_id: 'unsyncedItem' })]);
+    const remote = new FakeRemote();
+    const summary = await new AttachmentSync(local, remote, loadOk).syncAttachments('A');
+
+    expect(summary.uploaded).toBe(0);
+    expect(summary.failed).toBe(0); // waiting, not failing
+    expect(local.rows.get('w1')?.sync_state).toBe('local');
+    expect(remote.objects.size).toBe(0);
   });
 
   it('is a no-op on a second run once everything is synced', async () => {
     const local = new FakeLocal([att('a1')]);
     const remote = new FakeRemote();
     const sync = new AttachmentSync(local, remote, loadOk);
-    await sync.syncAttachments();
-    const second = await sync.syncAttachments();
-    expect(second).toEqual({ skipped: false, uploaded: 0, removed: 0, failed: 0 });
+    await sync.syncAttachments('A');
+    const second = await sync.syncAttachments('A');
+    expect(second).toEqual({ skipped: false, uploaded: 0, removed: 0, pulled: 1, failed: 0 });
   });
 });

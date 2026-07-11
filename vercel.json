@@ -2,8 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "npm install",
-  "buildCommand": "npx expo export --platform web",
+  "buildCommand": "npx expo export --platform web && node scripts/postexport.js",
   "outputDirectory": "dist",
+  "build": {
+    "env": {
+      "EXPO_PUBLIC_SUPABASE_URL": "https://tvgutsihvyjflqsihxxi.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_bZbHjXmN3YhThzQGmocTyA_XdUBaqJa"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

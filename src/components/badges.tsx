@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Surface } from 'react-native-paper';
 import type { Rating } from '@soteria/scoring-engine';
-import { ratingColors, surfaces, text as textTokens } from '@/theme/tokens';
+import { ratingColors, semantic, surfaces, text as textTokens } from '@/theme/tokens';
 
 /** Small color dot for a rating (item lists). Muted when unrated. */
 export function RatingDot({ rating }: { rating: Rating | null }): React.ReactElement {
@@ -27,6 +27,26 @@ const sifStyles = StyleSheet.create({
   badge: { backgroundColor: '#8F1D28', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 },
   small: { paddingHorizontal: 5, paddingVertical: 2 },
   text: { color: '#FDE2E2', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  textSmall: { fontSize: 10 },
+});
+
+/**
+ * Compact privileged-audit marker for list rows (the full PrivilegeBanner is
+ * for detail screens). Amber like the banner — NEVER the SIF badge, which
+ * signals serious-injury potential, an unrelated semantic.
+ */
+export function PrivBadge({ small }: { small?: boolean }): React.ReactElement {
+  return (
+    <View style={[privChip.badge, small && privChip.small]}>
+      <Text style={[privChip.text, small && privChip.textSmall]}>PRIV</Text>
+    </View>
+  );
+}
+
+const privChip = StyleSheet.create({
+  badge: { backgroundColor: '#2A1B12', borderWidth: 1, borderColor: '#B0793C', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 },
+  small: { paddingHorizontal: 5, paddingVertical: 2 },
+  text: { color: semantic.warn, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
   textSmall: { fontSize: 10 },
 });
 

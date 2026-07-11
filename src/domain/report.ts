@@ -8,6 +8,7 @@
  * disclosure-log entry is written by the caller at export time, not here.
  */
 import { RATINGS, type Rating, type Tier } from '@soteria/scoring-engine';
+import { ratingColors } from '@/theme/tokens';
 import type { AuditItem, Audit, LibraryItem } from '@/db/types';
 import { scoreForAudit, deriveFindings, type Finding } from './audit';
 
@@ -87,16 +88,6 @@ export function buildReportModel(
   };
 }
 
-const RATING_HEX: Record<Rating, string> = {
-  'Best Practice': '#17B890',
-  Verified: '#3CA96B',
-  Low: '#E7C33B',
-  Moderate: '#E58E2E',
-  High: '#D9483B',
-  'Very High': '#8F1D28',
-  'Not Applicable': '#5F6E7D',
-};
-
 function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 }
@@ -125,9 +116,9 @@ export function renderReportHtml(model: ReportModel): string {
 
   const findingRows = model.findings
     .map(
-      (f) => `<div class="finding" style="border-left:5px solid ${RATING_HEX[f.rating]}">
+      (f) => `<div class="finding" style="border-left:5px solid ${ratingColors[f.rating]}">
         <div class="fh"><span class="mono">${esc(f.item_code)}</span>
-          <span class="tag" style="color:${RATING_HEX[f.rating]}">${f.rating}</span>
+          <span class="tag" style="color:${ratingColors[f.rating]}">${f.rating}</span>
           ${f.sif_potential ? '<span class="sif">SIF</span>' : ''}</div>
         <div class="req">${esc(f.requirement)}</div>
         <div class="cite mono">${esc(f.citation)}</div>
@@ -139,7 +130,7 @@ export function renderReportHtml(model: ReportModel): string {
 
   const ratingPills = RATINGS.map(
     (r) =>
-      `<span class="pill"><span class="dot" style="background:${RATING_HEX[r]}"></span>${r}: <b>${model.ratingCounts[r]}</b></span>`,
+      `<span class="pill"><span class="dot" style="background:${ratingColors[r]}"></span>${r}: <b>${model.ratingCounts[r]}</b></span>`,
   ).join('');
 
   return `<!doctype html><html><head><meta charset="utf-8"/>

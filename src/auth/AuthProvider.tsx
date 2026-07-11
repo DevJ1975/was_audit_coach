@@ -29,6 +29,12 @@ interface AuthContextValue {
   session: SupabaseSession | null;
   loading: boolean;
   backendConfigured: boolean;
+  /**
+   * False when signed in but the JWT lacks an org_id claim (misprovisioned
+   * account): RLS will reject every push, so the UI must say so instead of
+   * silently falling back to the pilot org and "syncing" into a black hole.
+   */
+  claimsOk: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
@@ -77,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
       session,
       loading,
       backendConfigured: isBackendConfigured,
+      claimsOk: session ? Boolean((session.user.app_metadata as { org_id?: string })?.org_id) : true,
       async signIn(email, password) {
         const supabase = getSupabase();
         if (!supabase) return { error: 'Backend not configured on this build.' };

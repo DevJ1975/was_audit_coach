@@ -4,13 +4,29 @@ import { Stack, Link } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
-import { AuthProvider } from '@/auth/AuthProvider';
+import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { RepoProvider } from '@/db/RepoProvider';
 import { BrandLogo, AppFooter } from '@/components/branding';
 import { paperTheme } from '@/theme/paperTheme';
-import { surfaces, text as textTokens } from '@/theme/tokens';
+import { registerServiceWorker } from '@/pwa/registerSw';
+import { brand, surfaces, text as textTokens } from '@/theme/tokens';
+
+/** Header account link — reflects the session instead of always "Sign in". */
+function AccountLink(): React.ReactElement {
+  const { session } = useAuth();
+  const label = session?.user.email ? session.user.email.split('@')[0]! : 'Sign in';
+  return (
+    <Link href="/login" style={styles.signIn} numberOfLines={1}>
+      {label}
+    </Link>
+  );
+}
 
 export default function RootLayout(): React.ReactElement {
+  // Offline web shell (PWA). No-op on native and in dev. Registered from the
+  // component lifecycle so module evaluation (tests, static passes) stays
+  // side-effect free.
+  React.useEffect(() => registerServiceWorker(), []);
   return (
     <SafeAreaProvider>
       <PaperProvider theme={paperTheme}>
@@ -32,11 +48,7 @@ export default function RootLayout(): React.ReactElement {
                   options={{
                     headerTitle: () => <BrandLogo />,
                     headerTitleAlign: 'center',
-                    headerRight: () => (
-                      <Link href="/login" style={styles.signIn}>
-                        Sign in
-                      </Link>
-                    ),
+                    headerRight: () => <AccountLink />,
                   }}
                 />
                 <Stack.Screen name="login" options={{ title: 'Sign in', presentation: 'modal' }} />
@@ -53,5 +65,5 @@ export default function RootLayout(): React.ReactElement {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: surfaces.bg },
-  signIn: { color: '#4FA3E3', fontWeight: '600', paddingHorizontal: 12, fontSize: 15 },
+  signIn: { color: brand.default, fontWeight: '600', paddingHorizontal: 12, fontSize: 15, maxWidth: 140 },
 });

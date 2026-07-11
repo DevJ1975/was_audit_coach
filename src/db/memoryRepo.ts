@@ -33,6 +33,8 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
   const scoping = new Map<string, ScopingAnswer[]>(); // audit_id →
   const items = new Map<string, AuditItem>(); // audit_item_id →
   const events: AuditItemEvent[] = [];
+  const pushedEventIds = new Set<string>(); // storage-level push cursors
+  const pushedDisclosureIds = new Set<string>();
   const attachments = new Map<string, Attachment>();
   const cas = new Map<string, CorrectiveAction>();
   const disclosures: DisclosureLogEntry[] = [];
@@ -112,6 +114,7 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
           auditor_notes: '',
           ai_generated: false,
           sync_state: 'local',
+          conflict_rating: null,
           updated_at: ts,
         };
         items.set(itemId, ai);
@@ -139,6 +142,31 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
       return scoping.get(audit_id) ?? [];
     },
 
+    async updateScopingAnswer(audit_id, question_key, answer, actor_id, ctx) {
+      const audit = audits.get(audit_id);
+      if (!audit) throw new Error(`audit not found: ${audit_id}`);
+      const current = scoping.get(audit_id) ?? [];
+      const next = current.some((a) => a.question_key === question_key)
+        ? current.map((a) => (a.question_key === question_key ? { ...a, answer } : a))
+        : [...current, { audit_id, org_id: audit.org_id, question_key, answer }];
+      scoping.set(audit_id, next);
+
+      // Recompute applicability from the FULL answer set; flip only the deltas
+      // so each change is an auditable applicability_changed event.
+      const answerMap = Object.fromEntries(next.map((a) => [a.question_key, a.answer]));
+      const applicable = computeApplicableCodes(ctx.library, ctx.questions, answerMap);
+      for (const it of items.values()) {
+        if (it.audit_id !== audit_id) continue;
+        const should = applicable.has(it.item_code);
+        if (it.applicable !== should) {
+          it.applicable = should;
+          if (it.sync_state === 'synced') it.sync_state = 'local';
+          it.updated_at = deps.now();
+          appendEvent(it, 'applicability_changed', { applicable: should, via: question_key }, actor_id);
+        }
+      }
+    },
+
     async getAuditItems(audit_id) {
       return [...items.values()].filter((it) => it.audit_id === audit_id).sort(compareByCode);
     },
@@ -151,6 +179,7 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
       const it = requireItem(audit_item_id);
       const from = it.rating;
       it.rating = rating;
+      if (it.sync_state === 'synced') it.sync_state = 'local'; // dirty — clock-independent push eligibility
       it.updated_at = deps.now();
       appendEvent(it, 'rating_set', { from, to: rating }, actor_id);
       return it;
@@ -159,6 +188,7 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
     async setText(audit_item_id, field, value, actor_id, opts) {
       const it = requireItem(audit_item_id);
       it[field] = value;
+      if (it.sync_state === 'synced') it.sync_state = 'local';
       it.updated_at = deps.now();
       const type: AuditEventType =
         field === 'observations'
@@ -180,6 +210,7 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
       const it = requireItem(audit_item_id);
       if (it.applicable !== applicable) {
         it.applicable = applicable;
+        if (it.sync_state === 'synced') it.sync_state = 'local';
         it.updated_at = deps.now();
         appendEvent(it, 'applicability_changed', { applicable }, actor_id);
       }
@@ -192,6 +223,47 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
 
     async applyMergedItems(rows) {
       for (const row of rows) items.set(row.id, { ...row });
+    },
+
+    async resolveRatingConflict(audit_item_id, rating: Rating | null, actor_id) {
+      const it = requireItem(audit_item_id);
+      const candidates = { local: it.rating, remote: it.conflict_rating };
+      it.rating = rating;
+      it.conflict_rating = null;
+      it.sync_state = 'local'; // the resolution is a fresh local write → pushes
+      it.updated_at = deps.now();
+      appendEvent(it, 'rating_set', { from: candidates.local, to: rating, resolution: true, candidates }, actor_id);
+      return it;
+    },
+
+    async listUnpushedEvents(audit_id) {
+      return events.filter((e) => e.audit_id === audit_id && !pushedEventIds.has(e.id));
+    },
+
+    async markEventsPushed(event_ids) {
+      for (const id of event_ids) pushedEventIds.add(id);
+    },
+
+    async applyRemoteAudit(audit) {
+      const prev = audits.get(audit.id);
+      // library_version_id / created_by / created_at are frozen at creation —
+      // a header refresh updates the mutable fields only.
+      audits.set(
+        audit.id,
+        prev
+          ? { ...audit, library_version_id: prev.library_version_id, created_by: prev.created_by, created_at: prev.created_at }
+          : { ...audit },
+      );
+    },
+
+    async applyScopingAnswers(audit_id, answers) {
+      scoping.set(audit_id, answers.map((a) => ({ ...a })));
+    },
+
+    async applyRemoteAttachments(rows) {
+      for (const row of rows) {
+        if (!attachments.has(row.id)) attachments.set(row.id, { ...row });
+      }
     },
 
     async addAttachment(audit_item_id, kind: AttachmentKind, uri, actor_id, transcription) {
@@ -233,7 +305,10 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
     },
 
     async listPendingUploads() {
-      return [...attachments.values()].filter((a) => a.sync_state === 'local' && !a.deleted_at);
+      return [...attachments.values()].filter((a) => {
+        if (a.sync_state !== 'local' || a.deleted_at) return false;
+        return items.get(a.audit_item_id)?.sync_state !== 'local'; // parent row exists server-side
+      });
     },
 
     async markAttachmentSynced(attachment_id, storage_path) {
@@ -260,6 +335,14 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
 
     async logDisclosure(entry) {
       disclosures.push({ ...entry, id: deps.newId(), created_at: deps.now() });
+    },
+
+    async listUnpushedDisclosures(audit_id) {
+      return disclosures.filter((d) => d.audit_id === audit_id && !pushedDisclosureIds.has(d.id));
+    },
+
+    async markDisclosuresPushed(ids) {
+      for (const id of ids) pushedDisclosureIds.add(id);
     },
 
     async listDisclosures(audit_id) {

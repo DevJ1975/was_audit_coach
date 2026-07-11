@@ -8,7 +8,7 @@
  * only and covered indirectly by the AttachmentSync unit tests through a fake.
  * Verify on device against the applied 0001 schema.
  */
-import { getSupabase } from '@/db/supabase';
+import { getSupabase, hasSession } from '@/db/supabase';
 import type { EvidenceRemote, EvidenceBlob, RemoteAttachment } from './remote';
 
 const BUCKET = 'evidence';
@@ -16,7 +16,29 @@ const BUCKET = 'evidence';
 export function createSupabaseEvidence(): EvidenceRemote {
   return {
     isAvailable() {
-      return getSupabase() != null;
+      // Configured AND signed in — anon uploads only bounce off bucket RLS.
+      return getSupabase() != null && hasSession();
+    },
+
+    async pullAttachments(auditId: string) {
+      const supabase = getSupabase();
+      if (!supabase) return [];
+      // attachments has no audit_id column — filter through the embedded
+      // audit_items join (RLS applies to both tables independently).
+      const { data, error } = await supabase
+        .from('attachments')
+        .select('id, org_id, audit_item_id, kind, storage_path, transcription, created_at, audit_items!inner(audit_id)')
+        .eq('audit_items.audit_id', auditId);
+      if (error) throw new Error(`pullAttachments: ${error.message}`);
+      return (data ?? []).map((r) => ({
+        id: r.id as string,
+        org_id: r.org_id as string,
+        audit_item_id: r.audit_item_id as string,
+        kind: r.kind as string,
+        storage_path: r.storage_path as string,
+        transcription: (r.transcription ?? null) as string | null,
+        created_at: r.created_at as string,
+      }));
     },
 
     async uploadEvidence(path: string, blob: EvidenceBlob) {

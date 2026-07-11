@@ -3,14 +3,16 @@ import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Banner, Text } from 'react-native-paper';
 import { Screen, Row, Button, Title, Subtitle, Mono } from '@/components/ui';
-import { SifBadge } from '@/components/badges';
+import { PrivBadge } from '@/components/badges';
 import { useAudits } from '@/hooks/useAudit';
+import { useCloudPull } from '@/hooks/useCloudPull';
 import { IS_PLACEHOLDER } from '@/seed';
-import { text as textTokens, brand } from '@/theme/tokens';
+import { text as textTokens, brand, semantic } from '@/theme/tokens';
 
 export default function AuditListScreen(): React.ReactElement {
   const router = useRouter();
-  const { audits, loading } = useAudits();
+  const { audits, loading, reload } = useAudits();
+  const cloud = useCloudPull(reload);
 
   return (
     <Screen>
@@ -37,6 +39,28 @@ export default function AuditListScreen(): React.ReactElement {
         </Banner>
       ) : null}
 
+      {/* Cloud discovery — audits created on other devices (or before a
+          reinstall) materialize locally. Signed-in only; offline unaffected. */}
+      {cloud.available ? (
+        <View style={styles.cloudRow}>
+          <Button
+            label={cloud.pulling ? 'Checking cloud…' : 'Check cloud for audits'}
+            variant="ghost"
+            onPress={() => void cloud.pull()}
+            disabled={cloud.pulling}
+          />
+          {cloud.result ? (
+            <Text style={styles.cloudNote}>
+              {cloud.result.error
+                ? `Cloud check failed: ${cloud.result.error}`
+                : cloud.result.added > 0
+                  ? `${cloud.result.added} audit${cloud.result.added === 1 ? '' : 's'} added from cloud`
+                  : 'Up to date'}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
       {loading ? (
         <ActivityIndicator animating color={brand.default} style={styles.loading} />
       ) : null}
@@ -57,7 +81,7 @@ export default function AuditListScreen(): React.ReactElement {
               <Text style={styles.auditTitle} numberOfLines={1}>
                 {a.title}
               </Text>
-              {a.privileged ? <SifBadge small /> : null}
+              {a.privileged ? <PrivBadge small /> : null}
             </View>
             <View style={styles.rowMeta}>
               <Mono style={styles.meta}>{a.status}</Mono>
@@ -74,11 +98,13 @@ export default function AuditListScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  notice: { backgroundColor: '#2A2416', borderColor: '#E7C33B', borderWidth: 1, borderRadius: 8 },
+  notice: { backgroundColor: '#2A2416', borderColor: semantic.warn, borderWidth: 1, borderRadius: 8 },
   noticeContent: { paddingVertical: 4 },
-  noticeText: { color: '#E7C33B', fontSize: 12 },
+  noticeText: { color: semantic.warn, fontSize: 12 },
   mono: { fontFamily: 'monospace' },
   loading: { paddingVertical: 24 },
+  cloudRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  cloudNote: { color: textTokens.dim, fontSize: 12 },
   empty: { padding: 24, alignItems: 'center', gap: 8 },
   emptyBody: { color: textTokens.dim, textAlign: 'center', fontSize: 14 },
   rowBody: { flex: 1, gap: 4 },

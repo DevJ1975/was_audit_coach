@@ -13,7 +13,7 @@ import { compareByCode } from '@/domain/ordering';
 import { requestDraft, isAiConfigured } from '@/ai/client';
 import { buildObservationPolish, buildRecommendationDraft, buildAriaCoach, type GroundingItem } from '@/ai/prompts';
 import type { Rating } from '@soteria/scoring-engine';
-import { surfaces, text as textTokens, brand, ratingColors, layout } from '@/theme/tokens';
+import { surfaces, text as textTokens, brand, ratingColors, layout, semantic } from '@/theme/tokens';
 
 type TextField = 'observations' | 'recommendations' | 'auditor_notes';
 const TEXT_FIELDS: TextField[] = ['observations', 'recommendations', 'auditor_notes'];
@@ -292,6 +292,12 @@ export default function ItemCardScreen(): React.ReactElement {
       {/* Rating — auditor-only (Non-Negotiable #2) */}
       <Card accent={item.rating ? ratingColors[item.rating] : undefined}>
         <Subtitle>Rating</Subtitle>
+        {item.sync_state === 'needs_resolution' ? (
+          <Text style={styles.conflictNote}>
+            Rated differently on another device ({item.conflict_rating ?? 'Unrated'}) — resolve on
+            the audit screen.
+          </Text>
+        ) : null}
         <RatingSelector value={item.rating} onChange={onRate} />
       </Card>
 
@@ -449,7 +455,8 @@ const styles = StyleSheet.create({
   nav: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4 },
   aiRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
   aiHint: { color: textTokens.faint, fontSize: 12 },
-  aiError: { color: '#E7C33B', fontSize: 13 },
+  conflictNote: { color: semantic.warn, fontSize: 13, marginBottom: 4 },
+  aiError: { color: semantic.warn, fontSize: 13 },
   aiBox: {
     marginTop: 8,
     borderWidth: 1,

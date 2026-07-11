@@ -13,15 +13,17 @@
  * Direction is upload-only for now: pulling attachments authored on *another*
  * device (and resolving them to signed URLs for viewing) is the next increment.
  */
-import type { Attachment } from '@/db/types';
+import type { Attachment, AttachmentKind } from '@/db/types';
 import type { EvidenceRemote, EvidenceBlob, RemoteAttachment } from './remote';
 
 /** The slice of the repo the attachment sync needs. The real Repo satisfies it. */
 export interface AttachmentLocal {
+  /** Pending uploads whose PARENT ITEM already reached the server (FK-safe). */
   listPendingUploads(): Promise<Attachment[]>;
   markAttachmentSynced(attachment_id: string, storage_path: string): Promise<void>;
   listPendingRemovals(): Promise<Attachment[]>;
   purgeAttachment(attachment_id: string): Promise<void>;
+  applyRemoteAttachments(rows: Attachment[]): Promise<void>;
 }
 
 /** Reads a durable local file into upload-ready bytes (capture.loadForUpload). */
@@ -31,6 +33,8 @@ export interface AttachmentSyncSummary {
   skipped: boolean;
   uploaded: number;
   removed: number;
+  /** Metadata rows pulled from the server (evidence captured elsewhere). */
+  pulled: number;
   /** Rows that errored this pass; they stay pending and retry next sync. */
   failed: number;
 }
@@ -68,12 +72,23 @@ export class AttachmentSync {
     private readonly loadFile: LoadForUpload,
   ) {}
 
-  async syncAttachments(): Promise<AttachmentSyncSummary> {
+  /**
+   * One evidence pass. Uploads and removals are GLOBAL — the repo's
+   * listPendingUploads is FK-safe by construction (only evidence whose parent
+   * item already reached the server), so photos captured in audit A flush on
+   * ANY sync once A's items have pushed, never stranding evidence behind the
+   * one audit the user happens to open. When `auditId` is given, remote
+   * metadata for that audit is also pulled, so evidence captured on other
+   * devices becomes visible here (bytes stay in Storage; the UI signs URLs on
+   * demand).
+   */
+  async syncAttachments(auditId?: string): Promise<AttachmentSyncSummary> {
     if (!this.remote.isAvailable()) {
-      return { skipped: true, uploaded: 0, removed: 0, failed: 0 };
+      return { skipped: true, uploaded: 0, removed: 0, pulled: 0, failed: 0 };
     }
     let uploaded = 0;
     let removed = 0;
+    let pulled = 0;
     let failed = 0;
 
     // Removals first — free the Storage object + server row for tombstoned
@@ -105,6 +120,30 @@ export class AttachmentSync {
       }
     }
 
-    return { skipped: false, uploaded, removed, failed };
+    // Pull — metadata rows authored on other devices for this audit. Locally
+    // known ids (including tombstones) are never overwritten or resurrected.
+    if (auditId) {
+      try {
+        const remoteRows = await this.remote.pullAttachments(auditId);
+        const asLocal = remoteRows.map((r) => toLocalRow(r));
+        await this.local.applyRemoteAttachments(asLocal);
+        pulled = asLocal.length;
+      } catch {
+        failed++;
+      }
+    }
+
+    return { skipped: false, uploaded, removed, pulled, failed };
   }
+}
+
+/** A server metadata row as a local Attachment: no local file (uri empty) —
+ *  the bytes live in Storage and viewing resolves a signed URL on demand. */
+function toLocalRow(r: RemoteAttachment): Attachment {
+  return {
+    id: r.id, org_id: r.org_id, audit_item_id: r.audit_item_id,
+    kind: r.kind as AttachmentKind, uri: '', storage_path: r.storage_path,
+    sync_state: 'synced', deleted_at: null,
+    transcription: r.transcription, created_at: r.created_at,
+  };
 }

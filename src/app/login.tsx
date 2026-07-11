@@ -5,11 +5,11 @@ import { Banner, HelperText, TextInput, Text } from 'react-native-paper';
 import { Screen, Card, Button, Title, Subtitle } from '@/components/ui';
 import { BrandLogo } from '@/components/branding';
 import { useAuth } from '@/auth/AuthProvider';
-import { text as textTokens } from '@/theme/tokens';
+import { text as textTokens, semantic } from '@/theme/tokens';
 
 export default function LoginScreen(): React.ReactElement {
   const router = useRouter();
-  const { signIn, backendConfigured, mode } = useAuth();
+  const { signIn, signOut, backendConfigured, mode, session, identity, claimsOk } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +22,45 @@ export default function LoginScreen(): React.ReactElement {
     setBusy(false);
     if (error) setError(error);
     else router.back();
+  }
+
+  async function doSignOut(): Promise<void> {
+    setBusy(true);
+    await signOut();
+    setBusy(false);
+  }
+
+  // Signed in — show who, surface a provisioning problem, offer sign-out
+  // (shared field tablets need a way to hand the device over).
+  if (session) {
+    return (
+      <Screen>
+        <Stack.Screen options={{ title: 'Account' }} />
+        <View style={styles.logoWrap}>
+          <BrandLogo height={48} />
+        </View>
+        <Card>
+          <Title>Signed in</Title>
+          <Text style={styles.who}>{session.user.email}</Text>
+          <Text style={styles.meta}>
+            Org: {identity.org_id} · Role: {identity.role.replace('_', ' ')}
+          </Text>
+          {!claimsOk ? (
+            <Text style={styles.claimWarn}>
+              This account has no org assigned (missing org_id claim), so nothing can sync to the
+              server. Ask your admin to provision the account, then sign out and back in.
+            </Text>
+          ) : null}
+          <Button
+            label={busy ? 'Signing out…' : 'Sign out'}
+            variant="secondary"
+            onPress={() => void doSignOut()}
+            disabled={busy}
+          />
+        </Card>
+        <Button label="Back" variant="ghost" onPress={() => router.back()} />
+      </Screen>
+    );
   }
 
   return (
@@ -82,4 +121,7 @@ const styles = StyleSheet.create({
   notice: { borderRadius: 8 },
   input: { backgroundColor: 'transparent' },
   mode: { color: textTokens.faint, fontSize: 12, textAlign: 'center' },
+  who: { color: textTokens.primary, fontSize: 16, fontWeight: '600' },
+  meta: { color: textTokens.dim, fontSize: 13 },
+  claimWarn: { color: semantic.warn, fontSize: 13, lineHeight: 18 },
 });

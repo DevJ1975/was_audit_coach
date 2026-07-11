@@ -15,6 +15,7 @@ const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 export const isBackendConfigured = Boolean(url && key);
 
 let client: SupabaseClient | null = null;
+let sessionPresent = false;
 
 /** The shared client, or null when the backend isn't configured (field mode). */
 export function getSupabase(): SupabaseClient | null {
@@ -28,6 +29,22 @@ export function getSupabase(): SupabaseClient | null {
         detectSessionInUrl: false,
       },
     });
+    // Track session presence synchronously readable by the sync adapters —
+    // isAvailable() must mean "configured AND signed in", or a signed-out user
+    // gets an enabled Sync button whose pushes all fail RLS (silently, before
+    // this existed). onAuthStateChange fires INITIAL_SESSION on subscribe, so
+    // a restored AsyncStorage session is picked up without an explicit get.
+    client.auth.onAuthStateChange((_event, session) => {
+      sessionPresent = session != null;
+    });
   }
   return client;
+}
+
+/**
+ * True when a user session exists (kept current via onAuthStateChange).
+ * Synchronous by design: sync-availability checks run in render paths.
+ */
+export function hasSession(): boolean {
+  return sessionPresent;
 }

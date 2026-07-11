@@ -1,49 +1,49 @@
 /**
  * useSync — a manual "sync now" trigger for one audit. Offline-first: when no
- * backend/session is present it is simply unavailable and the audit loop is
- * unaffected. Pushes the audit header (so the FK exists) then reconciles items.
+ * backend/session is present the audit loop is unaffected; sync is deferred,
+ * never blocking — and never silent: failures surface as `error`, a skipped
+ * run (availability lost between render and tap) surfaces as `skipped`, and a
+ * configured-but-signed-out build reports `signInNeeded` so the screen routes
+ * to login instead of showing a dead button.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useRepo } from '@/db/RepoProvider';
-import { createSync } from '@/db/sync';
-import type { SyncSummary, AttachmentSyncSummary } from '@/db/sync';
+import { useAuth } from '@/auth/AuthProvider';
+import { isBackendConfigured, hasSession } from '@/db/supabase';
+import { createSync, runFullSync, errorMessage, type FullSyncResult } from '@/db/sync';
 
 export function useSync(auditId: string): {
   sync: () => Promise<void>;
   syncing: boolean;
-  summary: SyncSummary | null;
-  evidence: AttachmentSyncSummary | null;
+  result: FullSyncResult | null;
+  error: string | null;
   available: boolean;
+  signInNeeded: boolean;
 } {
   const repo = useRepo();
-  // One engine per repo instance so the pull cursor persists across the session.
-  const { engine, remote, attachments } = useMemo(() => createSync(repo), [repo]);
+  // Subscribing to auth context makes availability REACTIVE: sign-in/out and
+  // the cold-start INITIAL_SESSION all re-render this hook, so the button
+  // state never depends on an incidental re-render elsewhere.
+  useAuth();
+  // Bundle is a per-repo singleton — the pull cursor survives remounts.
+  const { remote } = useMemo(() => createSync(repo), [repo]);
   const [syncing, setSyncing] = useState(false);
-  const [summary, setSummary] = useState<SyncSummary | null>(null);
-  const [evidence, setEvidence] = useState<AttachmentSyncSummary | null>(null);
+  const [result, setResult] = useState<FullSyncResult | null>(null);
   const available = remote.isAvailable();
+  const signInNeeded = isBackendConfigured && !hasSession();
 
   const sync = useCallback(async () => {
     if (!available || syncing) return;
     setSyncing(true);
     try {
-      const audit = await repo.getAudit(auditId);
-      if (audit) {
-        await remote.upsertAudit({
-          id: audit.id, org_id: audit.org_id, title: audit.title, status: audit.status,
-          privileged: audit.privileged, attorney_of_record: audit.attorney_of_record,
-          state_plan: audit.state_plan, library_version_id: audit.library_version_id,
-          updated_at: audit.updated_at,
-        });
-      }
-      setSummary(await engine.syncAudit(auditId));
-      // Flush any captured evidence to Storage (global: pending files from any
-      // audit go up whenever the auditor lands online and taps Sync).
-      setEvidence(await attachments.syncAttachments());
+      setResult(await runFullSync(repo, auditId));
+    } catch (e) {
+      // runFullSync guards each step, so this is unexpected — still never silent.
+      setResult({ skipped: false, items: null, evidence: null, eventsPushed: 0, error: errorMessage(e) });
     } finally {
       setSyncing(false);
     }
-  }, [available, syncing, repo, engine, remote, attachments, auditId]);
+  }, [available, syncing, repo, auditId]);
 
-  return { sync, syncing, summary, evidence, available };
+  return { sync, syncing, result, error: result?.error ?? null, available, signInNeeded };
 }

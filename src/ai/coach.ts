@@ -12,6 +12,7 @@
  * offline (#3).
  */
 import { getSupabase } from '@/db/supabase';
+import { unwrapFunctionError } from './invokeError';
 
 export { isAiConfigured } from './client';
 
@@ -22,7 +23,7 @@ export interface CoachTurn {
 
 export type CoachResult =
   | { ok: true; text: string; sessionId: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; sessionId?: string };
 
 export async function askAuditCoach(
   message: string,
@@ -45,7 +46,13 @@ export async function askAuditCoach(
         ...(opts.auditId ? { audit_id: opts.auditId } : {}),
       },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      // The function returns session_id even on errors (e.g. its 504) so the
+      // thread can continue — recover it from the error body.
+      const u = await unwrapFunctionError(error, 'The coach is unavailable right now.');
+      const sid = u.body && typeof u.body.session_id === 'string' ? u.body.session_id : undefined;
+      return { ok: false, error: u.message, ...(sid ? { sessionId: sid } : {}) };
+    }
     if (!data?.text || !data.session_id) {
       return { ok: false, error: data?.error ?? 'No answer returned.' };
     }

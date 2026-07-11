@@ -33,7 +33,7 @@ import {
 import { useAuditData } from '@/hooks/useAudit';
 import { libraryItem, sectionNames } from '@/seed';
 import type { Audit } from '@/db/types';
-import { brand, layout, surfaces, text as textTokens } from '@/theme/tokens';
+import { brand, layout, surfaces, text as textTokens, semantic } from '@/theme/tokens';
 
 const SUGGESTIONS = [
   'What should I look for when auditing a lockout/tagout program?',
@@ -99,6 +99,9 @@ export default function AuditCoachScreen(): React.ReactElement {
       setMessages(next);
       persist(next);
     } else {
+      // Even failed turns can mint/return a session — keep it so the thread
+      // continues instead of silently starting a fresh coach with no memory.
+      if (r.sessionId) sessionRef.current = r.sessionId;
       setError(r.error);
     }
   }
@@ -243,7 +246,7 @@ const styles = StyleSheet.create({
   bubbleText: { color: textTokens.primary, fontSize: 15, lineHeight: 22 },
   busyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   busyText: { color: textTokens.dim, fontSize: 13 },
-  error: { color: '#E7C33B', fontSize: 13, paddingHorizontal: 4 },
+  error: { color: semantic.warn, fontSize: 13, paddingHorizontal: 4 },
   offline: {
     color: textTokens.dim,
     fontSize: 12,

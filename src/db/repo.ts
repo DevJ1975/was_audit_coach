@@ -58,6 +58,20 @@ export interface Repo {
 
   // --- Scoping --------------------------------------------------------------
   getScopingAnswers(audit_id: string): Promise<ScopingAnswer[]>;
+  /**
+   * Change one scoping answer AFTER creation (the auditor discovered a missed
+   * process on the floor) and recompute item applicability from the full
+   * answer set. Every flipped item logs applicability_changed (NN #6). The
+   * frozen library context comes from the caller — the audit's library version
+   * never changes.
+   */
+  updateScopingAnswer(
+    audit_id: string,
+    question_key: string,
+    answer: boolean,
+    actor_id: string,
+    ctx: AuditLibraryContext,
+  ): Promise<void>;
 
   // --- Audit items (each mutation appends an event) -------------------------
   getAuditItems(audit_id: string): Promise<AuditItem[]>;
@@ -83,6 +97,28 @@ export interface Repo {
    * exist locally (items authored on another device).
    */
   applyMergedItems(items: AuditItem[]): Promise<void>;
+  /**
+   * Resolve a divergent-rating conflict: the LEAD AUDITOR picked `rating` after
+   * seeing both candidates. Sets the rating, clears conflict_rating, marks the
+   * row 'local' (so the resolution pushes), and logs a rating_set event whose
+   * payload records both candidates — the resolution is auditable (NN #6).
+   */
+  resolveRatingConflict(audit_item_id: string, rating: Rating | null, actor_id: string): Promise<AuditItem>;
+  /** Events not yet appended to the server log, oldest first. */
+  listUnpushedEvents(audit_id: string): Promise<AuditItemEvent[]>;
+  /** Mark events as pushed (after a successful server append). */
+  markEventsPushed(event_ids: string[]): Promise<void>;
+  /** Upsert an audit header that arrived from the server (no events). */
+  applyRemoteAudit(audit: Audit): Promise<void>;
+  /** Replace scoping answers that arrived from the server (no events). */
+  applyScopingAnswers(audit_id: string, answers: ScopingAnswer[]): Promise<void>;
+  /**
+   * Insert attachment metadata rows that arrived from sync for items on this
+   * device. Rows already present locally (any state, incl. tombstones) are left
+   * untouched; new rows carry an empty uri (bytes live in Storage; the UI
+   * resolves a signed URL from storage_path). No events — sync, not an edit.
+   */
+  applyRemoteAttachments(rows: Attachment[]): Promise<void>;
 
   // --- Attachments ----------------------------------------------------------
   addAttachment(
@@ -104,7 +140,13 @@ export interface Repo {
   listAttachments(audit_item_id: string): Promise<Attachment[]>;
 
   // --- Attachment sync (Phase 4; driven by AttachmentSync behind the seam) ---
-  /** Captured-but-not-yet-uploaded rows (sync_state 'local', not tombstoned). */
+  /**
+   * Captured-but-not-yet-uploaded rows (sync_state 'local', not tombstoned)
+   * whose PARENT ITEM has already reached the server (item sync_state is not
+   * 'local'). The filter makes uploads FK-safe by construction — evidence for
+   * a never-synced audit simply waits until that audit's items push, instead
+   * of failing the attachments FK on every pass.
+   */
   listPendingUploads(): Promise<Attachment[]>;
   /** Mark a row uploaded: record its Storage path and flip it to 'synced'. */
   markAttachmentSynced(attachment_id: string, storage_path: string): Promise<void>;
@@ -120,4 +162,8 @@ export interface Repo {
   // --- Disclosure log (privilege trail) -------------------------------------
   logDisclosure(entry: Omit<DisclosureLogEntry, 'id' | 'created_at'>): Promise<void>;
   listDisclosures(audit_id: string): Promise<DisclosureLogEntry[]>;
+  /** Disclosures not yet appended to the server log (the log grows per view —
+   *  without a cursor every sync re-sends the whole history forever). */
+  listUnpushedDisclosures(audit_id: string): Promise<DisclosureLogEntry[]>;
+  markDisclosuresPushed(ids: string[]): Promise<void>;
 }

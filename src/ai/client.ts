@@ -8,6 +8,7 @@
  * blocks (Non-Negotiable #3).
  */
 import { getSupabase, isBackendConfigured } from '@/db/supabase';
+import { unwrapFunctionError } from './invokeError';
 import type { BuiltPrompt } from './prompts';
 
 /** AI features are usable only when a backend is configured on this build. */
@@ -41,7 +42,7 @@ export async function requestDraft(prompt: BuiltPrompt): Promise<DraftResult> {
         },
       },
     );
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: (await unwrapFunctionError(error, 'Draft request failed.')).message };
     if (!data?.text) return { ok: false, error: data?.error ?? 'No draft returned.' };
     return { ok: true, text: data.text.trim() };
   } catch (e) {

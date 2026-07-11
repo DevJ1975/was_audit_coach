@@ -12,7 +12,7 @@ import {
 import { Screen, Card, Button, Title, Subtitle, Body } from '@/components/ui';
 import { useRepo, useSession } from '@/db/RepoProvider';
 import { seedLibrary, seedQuestions, statePlans, LIBRARY_VERSION_ID } from '@/seed';
-import { surfaces, text as textTokens, brand, layout } from '@/theme/tokens';
+import { surfaces, text as textTokens, brand, layout, semantic } from '@/theme/tokens';
 
 const STEPS = ['Facility', 'Process inventory', 'Plan & privilege'] as const;
 
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   stepPill: { flex: 1, alignItems: 'center', gap: 4 },
   stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: surfaces.line },
   stepDotActive: { backgroundColor: brand.default },
-  stepDotDone: { backgroundColor: '#3CA96B' },
+  stepDotDone: { backgroundColor: semantic.success },
   stepLabel: { color: textTokens.faint, fontSize: 11, textAlign: 'center' },
   stepLabelActive: { color: textTokens.primary, fontWeight: '700' },
   input: { backgroundColor: 'transparent' },

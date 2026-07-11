@@ -14,7 +14,7 @@ function ai(item_code: string, section_code: string, rating: Rating | null, appl
   return {
     id: item_code, org_id: 'o', audit_id: 'a', item_code, section_code, applicable,
     rating, observations: rating ? `obs ${item_code}` : '', recommendations: '', auditor_notes: '',
-    ai_generated: false, sync_state: 'local', updated_at: '2026-07-11T00:00:00Z',
+    ai_generated: false, sync_state: 'local', conflict_rating: null, updated_at: '2026-07-11T00:00:00Z',
   };
 }
 
