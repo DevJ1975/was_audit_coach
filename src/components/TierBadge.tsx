@@ -1,15 +1,17 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Tier } from '@soteria/scoring-engine';
-import { tierColors, surfaces, text as textTokens, layout } from '@/theme/tokens';
+import { tierColors } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeProvider';
 
 /** Tier pill in the constant tier palette. `null` renders a muted "N/A" chip. */
 export function TierBadge({ tier, small }: { tier: Tier | null; small?: boolean }): React.ReactElement {
-  const color = tier ? tierColors[tier] : surfaces.line;
+  const { palette } = useTheme();
+  const color = tier ? tierColors[tier] : palette.surfaces.line;
   return (
     <View style={[styles.badge, small && styles.small, { borderColor: color, backgroundColor: color + '22' }]}>
       <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text style={[styles.label, small && styles.labelSmall, { color: tier ? color : textTokens.dim }]}>
+      <Text style={[styles.label, small && styles.labelSmall, { color: tier ? color : palette.text.dim }]}>
         {tier ?? 'N/A'}
       </Text>
     </View>

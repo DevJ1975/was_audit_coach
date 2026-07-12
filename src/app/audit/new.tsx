@@ -12,7 +12,8 @@ import {
 import { Screen, Card, Button, Title, Subtitle, Body } from '@/components/ui';
 import { useRepo, useSession } from '@/db/RepoProvider';
 import { seedLibrary, seedQuestions, statePlans, LIBRARY_VERSION_ID } from '@/seed';
-import { surfaces, text as textTokens, brand, layout, semantic } from '@/theme/tokens';
+import { layout, type Palette } from '@/theme/tokens';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
 
 const STEPS = ['Facility', 'Process inventory', 'Plan & privilege'] as const;
 
@@ -20,6 +21,8 @@ export default function NewAuditScreen(): React.ReactElement {
   const router = useRouter();
   const repo = useRepo();
   const session = useSession();
+  const styles = useThemedStyles(makeStyles);
+  const { palette } = useTheme();
 
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
@@ -150,7 +153,7 @@ export default function NewAuditScreen(): React.ReactElement {
               <Body>Conduct under attorney-client privilege</Body>
               <Text style={styles.hint}>Restricts access, watermarks exports, logs disclosures.</Text>
             </View>
-            <Switch value={privileged} onValueChange={setPrivileged} color={brand.default} />
+            <Switch value={privileged} onValueChange={setPrivileged} color={palette.brand.accent} />
           </View>
           {privileged ? (
             <>
@@ -183,26 +186,27 @@ export default function NewAuditScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  steps: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  stepPill: { flex: 1, alignItems: 'center', gap: 4 },
-  stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: surfaces.line },
-  stepDotActive: { backgroundColor: brand.default },
-  stepDotDone: { backgroundColor: semantic.success },
-  stepLabel: { color: textTokens.faint, fontSize: 11, textAlign: 'center' },
-  stepLabelActive: { color: textTokens.primary, fontWeight: '700' },
-  input: { backgroundColor: 'transparent' },
-  divider: { backgroundColor: surfaces.line },
-  qRow: { gap: 8, paddingVertical: 10 },
-  qText: { flexShrink: 1 },
-  yesno: { flexDirection: 'row', gap: 8 },
-  ynBtn: { flex: 1, borderRadius: layout.radius },
-  ynContent: { minHeight: layout.minTapTarget },
-  ynLabel: { fontSize: 16, fontWeight: '700' },
-  plans: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  planChip: { minHeight: layout.minTapTarget, justifyContent: 'center' },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 8 },
-  switchLabel: { flex: 1, gap: 2 },
-  hint: { color: textTokens.faint, fontSize: 12, lineHeight: 17 },
-  nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    steps: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+    stepPill: { flex: 1, alignItems: 'center', gap: 4 },
+    stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: t.surfaces.line },
+    stepDotActive: { backgroundColor: t.brand.accent },
+    stepDotDone: { backgroundColor: t.semantic.success },
+    stepLabel: { color: t.text.faint, fontSize: 11, textAlign: 'center' },
+    stepLabelActive: { color: t.text.primary, fontWeight: '700' },
+    input: { backgroundColor: 'transparent' },
+    divider: { backgroundColor: t.surfaces.line },
+    qRow: { gap: 8, paddingVertical: 10 },
+    qText: { flexShrink: 1 },
+    yesno: { flexDirection: 'row', gap: 8 },
+    ynBtn: { flex: 1, borderRadius: layout.radius },
+    ynContent: { minHeight: layout.minTapTarget },
+    ynLabel: { fontSize: 16, fontWeight: '700' },
+    plans: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    planChip: { minHeight: layout.minTapTarget, justifyContent: 'center' },
+    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 8 },
+    switchLabel: { flex: 1, gap: 2 },
+    hint: { color: t.text.faint, fontSize: 12, lineHeight: 17 },
+    nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  });

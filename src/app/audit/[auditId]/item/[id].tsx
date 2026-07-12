@@ -15,7 +15,8 @@ import { requestDraft } from '@/ai/client';
 import { useAiReady, aiHintText } from '@/hooks/useAiReady';
 import { buildObservationPolish, buildRecommendationDraft, buildAriaCoach, type GroundingItem } from '@/ai/prompts';
 import type { Rating } from '@soteria/scoring-engine';
-import { surfaces, text as textTokens, brand, ratingColors, layout, semantic } from '@/theme/tokens';
+import { ratingColors, layout, type Palette } from '@/theme/tokens';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
 
 type TextField = 'observations' | 'recommendations' | 'auditor_notes';
 const TEXT_FIELDS: TextField[] = ['observations', 'recommendations', 'auditor_notes'];
@@ -30,6 +31,7 @@ function AiDraftBox({
   onAccept: (t: string) => void;
   onDiscard: () => void;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const [draft, setDraft] = useState(text);
   useEffect(() => setDraft(text), [text]);
   return (
@@ -49,6 +51,8 @@ export default function ItemCardScreen(): React.ReactElement {
   const router = useRouter();
   const repo = useRepo();
   const session = useSession();
+  const styles = useThemedStyles(makeStyles);
+  const { palette } = useTheme();
 
   const { item, reload } = useAuditItem(id);
   const { audit, items } = useAuditData(auditId);
@@ -257,7 +261,7 @@ export default function ItemCardScreen(): React.ReactElement {
     return (
       <Screen>
         <Stack.Screen options={{ title: 'Item' }} />
-        <ActivityIndicator animating color={brand.default} style={styles.loading} />
+        <ActivityIndicator animating color={palette.brand.accent} style={styles.loading} />
         <Body>Loading…</Body>
       </Screen>
     );
@@ -303,8 +307,8 @@ export default function ItemCardScreen(): React.ReactElement {
       </Card>
 
       {/* Evidence protocol — OPEN BY DEFAULT, accent border (Non-Negotiable #8) */}
-      <Card accent={brand.default}>
-        <Subtitle style={{ color: brand.default }}>Evidence protocol</Subtitle>
+      <Card accent={palette.brand.accent}>
+        <Subtitle style={{ color: palette.brand.accent }}>Evidence protocol</Subtitle>
         <Body>{lib.evidence_protocol}</Body>
         {/* Audit Coach (managed agent) — HOW to audit this; distinct from Soteria
             (regulation text) and ARIA (this item's text only). */}
@@ -464,42 +468,43 @@ export default function ItemCardScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  code: { color: textTokens.primary, fontSize: 18, fontWeight: '800' },
-  position: { color: textTokens.dim, fontSize: 13, marginLeft: 'auto' },
-  collapseHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: layout.minTapTarget,
-    paddingVertical: 6,
-  },
-  caret: { color: textTokens.dim, fontSize: 16 },
-  citation: { color: textTokens.dim, fontSize: 12, marginTop: 4 },
-  fieldHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  textArea: {
-    minHeight: 96,
-    backgroundColor: surfaces.raised,
-    fontSize: 15,
-    lineHeight: 21,
-    textAlignVertical: 'top',
-  },
-  loading: { paddingVertical: 12 },
-  nav: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4 },
-  aiRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
-  aiHint: { color: textTokens.faint, fontSize: 12 },
-  conflictNote: { color: semantic.warn, fontSize: 13, marginBottom: 4 },
-  aiError: { color: semantic.warn, fontSize: 13 },
-  aiBox: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: brand.default,
-    borderRadius: layout.radius,
-    padding: 10,
-    gap: 8,
-    backgroundColor: surfaces.raised,
-  },
-  aiLabel: { color: brand.default, fontSize: 12, fontWeight: '700' },
-  aiActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    code: { color: t.text.primary, fontSize: 18, fontWeight: '800' },
+    position: { color: t.text.dim, fontSize: 13, marginLeft: 'auto' },
+    collapseHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: layout.minTapTarget,
+      paddingVertical: 6,
+    },
+    caret: { color: t.text.dim, fontSize: 16 },
+    citation: { color: t.text.dim, fontSize: 12, marginTop: 4 },
+    fieldHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    textArea: {
+      minHeight: 96,
+      backgroundColor: t.surfaces.raised,
+      fontSize: 15,
+      lineHeight: 21,
+      textAlignVertical: 'top',
+    },
+    loading: { paddingVertical: 12 },
+    nav: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4 },
+    aiRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+    aiHint: { color: t.text.faint, fontSize: 12 },
+    conflictNote: { color: t.semantic.warn, fontSize: 13, marginBottom: 4 },
+    aiError: { color: t.semantic.warn, fontSize: 13 },
+    aiBox: {
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: t.brand.accent,
+      borderRadius: layout.radius,
+      padding: 10,
+      gap: 8,
+      backgroundColor: t.surfaces.raised,
+    },
+    aiLabel: { color: t.brand.accent, fontSize: 12, fontWeight: '700' },
+    aiActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
+  });

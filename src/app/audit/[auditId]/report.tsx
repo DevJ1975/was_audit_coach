@@ -12,13 +12,15 @@ import { buildReportModel, renderReportHtml, type ReportEvidence } from '@/domai
 import { readAsDataUri } from '@/attachments/capture';
 import { libraryByCode, sectionNames } from '@/seed';
 import { FINDING_RATINGS, type Rating } from '@soteria/scoring-engine';
-import { ratingColors, text as textTokens, surfaces } from '@/theme/tokens';
+import { ratingColors, type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 export default function ReportScreen(): React.ReactElement {
   const { auditId } = useLocalSearchParams<{ auditId: string }>();
   const { audit, items, findings } = useAuditData(auditId);
   const repo = useRepo();
   const session = useSession();
+  const styles = useThemedStyles(makeStyles);
   const [exporting, setExporting] = useState(false);
 
   // Export the privilege-stamped PDF and log a disclosure (Part 1.5).
@@ -149,21 +151,22 @@ export default function ReportScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  summaryHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
-  counts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  countPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: surfaces.raised, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  countDot: { width: 8, height: 8, borderRadius: 4 },
-  countText: { color: textTokens.dim, fontSize: 12 },
-  countNum: { color: textTokens.primary, fontWeight: '800' },
-  sifLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  sifText: { color: textTokens.dim, fontSize: 12 },
-  heading: { marginTop: 4 },
-  empty: { color: textTokens.dim },
-  findingHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  code: { color: textTokens.primary, fontSize: 15, fontWeight: '800' },
-  ratingTag: { fontSize: 13, fontWeight: '800', marginLeft: 'auto' },
-  citation: { color: textTokens.dim, fontSize: 12 },
-  block: { gap: 2, marginTop: 4 },
-  blockLabel: { color: textTokens.faint, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    summaryHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
+    counts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    countPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaces.raised, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+    countDot: { width: 8, height: 8, borderRadius: 4 },
+    countText: { color: t.text.dim, fontSize: 12 },
+    countNum: { color: t.text.primary, fontWeight: '800' },
+    sifLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+    sifText: { color: t.text.dim, fontSize: 12 },
+    heading: { marginTop: 4 },
+    empty: { color: t.text.dim },
+    findingHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    code: { color: t.text.primary, fontSize: 15, fontWeight: '800' },
+    ratingTag: { fontSize: 13, fontWeight: '800', marginLeft: 'auto' },
+    citation: { color: t.text.dim, fontSize: 12 },
+    block: { gap: 2, marginTop: 4 },
+    blockLabel: { color: t.text.faint, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
+  });

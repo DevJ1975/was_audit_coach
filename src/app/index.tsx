@@ -7,12 +7,15 @@ import { PrivBadge } from '@/components/badges';
 import { useAudits } from '@/hooks/useAudit';
 import { useCloudPull } from '@/hooks/useCloudPull';
 import { IS_PLACEHOLDER } from '@/seed';
-import { text as textTokens, brand, semantic } from '@/theme/tokens';
+import { type Palette } from '@/theme/tokens';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
 
 export default function AuditListScreen(): React.ReactElement {
   const router = useRouter();
   const { audits, loading, reload } = useAudits();
   const cloud = useCloudPull(reload);
+  const styles = useThemedStyles(makeStyles);
+  const { palette } = useTheme();
 
   return (
     <Screen>
@@ -62,7 +65,7 @@ export default function AuditListScreen(): React.ReactElement {
       ) : null}
 
       {loading ? (
-        <ActivityIndicator animating color={brand.default} style={styles.loading} />
+        <ActivityIndicator animating color={palette.brand.accent} style={styles.loading} />
       ) : null}
 
       {!loading && audits.length === 0 ? (
@@ -96,23 +99,24 @@ export default function AuditListScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  notice: { backgroundColor: '#2A2416', borderColor: semantic.warn, borderWidth: 1, borderRadius: 8 },
-  noticeContent: { paddingVertical: 4 },
-  noticeText: { color: semantic.warn, fontSize: 12 },
-  mono: { fontFamily: 'monospace' },
-  loading: { paddingVertical: 24 },
-  cloudRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  cloudNote: { color: textTokens.dim, fontSize: 12 },
-  empty: { padding: 24, alignItems: 'center', gap: 8 },
-  emptyBody: { color: textTokens.dim, textAlign: 'center', fontSize: 14 },
-  rowBody: { flex: 1, gap: 4 },
-  soteriaTitle: { color: brand.default, fontSize: 16, fontWeight: '700' },
-  soteriaSub: { color: textTokens.dim, fontSize: 12 },
-  rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  auditTitle: { color: textTokens.primary, fontSize: 16, fontWeight: '600', flexShrink: 1 },
-  rowMeta: { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
-  meta: { color: textTokens.dim, fontSize: 12 },
-  chevron: { color: textTokens.faint, fontSize: 24, fontWeight: '300' },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+    notice: { backgroundColor: t.surfaces.raised, borderColor: t.semantic.warn, borderWidth: 1, borderRadius: 8 },
+    noticeContent: { paddingVertical: 4 },
+    noticeText: { color: t.semantic.warn, fontSize: 12 },
+    mono: { fontFamily: 'monospace' },
+    loading: { paddingVertical: 24 },
+    cloudRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+    cloudNote: { color: t.text.dim, fontSize: 12 },
+    empty: { padding: 24, alignItems: 'center', gap: 8 },
+    emptyBody: { color: t.text.dim, textAlign: 'center', fontSize: 14 },
+    rowBody: { flex: 1, gap: 4 },
+    soteriaTitle: { color: t.brand.accent, fontSize: 16, fontWeight: '700' },
+    soteriaSub: { color: t.text.dim, fontSize: 12 },
+    rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    auditTitle: { color: t.text.primary, fontSize: 16, fontWeight: '600', flexShrink: 1 },
+    rowMeta: { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
+    meta: { color: t.text.dim, fontSize: 12 },
+    chevron: { color: t.text.faint, fontSize: 24, fontWeight: '300' },
+  });

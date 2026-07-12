@@ -7,7 +7,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Tier } from '@soteria/scoring-engine';
 import { TierBadge } from './TierBadge';
-import { text as textTokens, typography } from '@/theme/tokens';
+import { typography, type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 export function ScoreReadout({
   rawScore,
@@ -28,6 +29,7 @@ export function ScoreReadout({
   size?: 'sm' | 'md' | 'lg';
   showTier?: boolean;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const scoreFont = size === 'lg' ? 28 : size === 'sm' ? 15 : 20;
   const pctText = percent === null ? '—' : `${percent.toFixed(1)}%`;
   return (
@@ -49,11 +51,12 @@ export function ScoreReadout({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: 4 },
-  line: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  score: { color: textTokens.primary, fontFamily: typography.mono, fontWeight: '700' },
-  denominator: { color: textTokens.dim, fontWeight: '400' },
-  percent: { color: textTokens.dim, fontFamily: typography.mono, fontWeight: '600' },
-  progress: { color: textTokens.faint, fontSize: 12 },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    wrap: { gap: 4 },
+    line: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+    score: { color: t.text.primary, fontFamily: typography.mono, fontWeight: '700' },
+    denominator: { color: t.text.dim, fontWeight: '400' },
+    percent: { color: t.text.dim, fontFamily: typography.mono, fontWeight: '600' },
+    progress: { color: t.text.faint, fontSize: 12 },
+  });

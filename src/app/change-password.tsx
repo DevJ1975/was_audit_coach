@@ -9,13 +9,15 @@ import { useRouter, Stack } from 'expo-router';
 import { HelperText, TextInput, Text } from 'react-native-paper';
 import { Screen, Card, Button, Title, Subtitle, Body } from '@/components/ui';
 import { useAuth } from '@/auth/AuthProvider';
-import { semantic } from '@/theme/tokens';
+import { type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 const MIN_LEN = 6;
 
 export default function ChangePasswordScreen(): React.ReactElement {
   const router = useRouter();
   const { session, changePassword, backendConfigured } = useAuth();
+  const styles = useThemedStyles(makeStyles);
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +131,8 @@ export default function ChangePasswordScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  input: { backgroundColor: 'transparent' },
-  success: { color: semantic.success, fontSize: 14, lineHeight: 20, marginBottom: 8 },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    input: { backgroundColor: 'transparent' },
+    success: { color: t.semantic.success, fontSize: 14, lineHeight: 20, marginBottom: 8 },
+  });

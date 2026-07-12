@@ -11,13 +11,16 @@ import { useConflicts } from '@/hooks/useConflicts';
 import { useDeleteAudit } from '@/hooks/useDeleteAudit';
 import { useRepo, useSession } from '@/db/RepoProvider';
 import { sectionNames, sectionOrder } from '@/seed';
-import { surfaces, text as textTokens, semantic, ratingColors } from '@/theme/tokens';
+import { ratingColors, type Palette } from '@/theme/tokens';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
 import type { Rating } from '@soteria/scoring-engine';
 
 /** A rating name in its semantic color (or "Unrated"). */
 function RatingText({ rating }: { rating: Rating | null }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { palette } = useTheme();
   return (
-    <Text style={[styles.candidate, { color: rating ? ratingColors[rating] : textTokens.dim }]}>
+    <Text style={[styles.candidate, { color: rating ? ratingColors[rating] : palette.text.dim }]}>
       {rating ?? 'Unrated'}
     </Text>
   );
@@ -28,6 +31,8 @@ export default function SectionListScreen(): React.ReactElement {
   const router = useRouter();
   const repo = useRepo();
   const session = useSession();
+  const styles = useThemedStyles(makeStyles);
+  const { palette } = useTheme();
   const { audit, items, score, findings, reload } = useAuditData(auditId);
   const { sync, syncing, result, error, available, signInNeeded } = useSync(auditId);
   const conflictQ = useConflicts(auditId);
@@ -157,8 +162,8 @@ export default function SectionListScreen(): React.ReactElement {
       {/* Rating conflicts — the lead auditor sees both candidates and picks.
           Divergent ratings are never auto-resolved (conflict policy). */}
       {conflicts.length > 0 ? (
-        <Card accent={semantic.warn}>
-          <Subtitle style={{ color: semantic.warn }}>
+        <Card accent={palette.semantic.warn}>
+          <Subtitle style={{ color: palette.semantic.warn }}>
             Rating conflicts ({conflicts.length})
           </Subtitle>
           <Text style={styles.conflictIntro}>
@@ -238,26 +243,27 @@ export default function SectionListScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  overallHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  status: { color: textTokens.dim, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  syncNote: { color: textTokens.faint, fontSize: 12, marginTop: 6 },
-  syncError: { color: semantic.warn, fontSize: 12, marginTop: 6 },
-  conflictIntro: { color: textTokens.dim, fontSize: 13 },
-  conflictRow: { gap: 6, marginTop: 8, borderTopWidth: 1, borderTopColor: surfaces.line, paddingTop: 8 },
-  conflictInfo: { gap: 4 },
-  candidates: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  candidateLabel: { color: textTokens.dim, fontSize: 13 },
-  candidate: { fontSize: 13, fontWeight: '800' },
-  conflictActions: { flexDirection: 'row', gap: 8 },
-  sectionsHeading: { fontSize: 16, marginTop: 4 },
-  divider: { backgroundColor: surfaces.line },
-  empty: { color: textTokens.dim },
-  emptyWrap: { gap: 10, alignItems: 'flex-start' },
-  rowBody: { flex: 1, gap: 6 },
-  rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  code: { color: textTokens.dim, fontSize: 13, fontWeight: '700' },
-  sectionName: { color: textTokens.primary, fontSize: 15, fontWeight: '600', flexShrink: 1 },
-  chevron: { color: textTokens.faint, fontSize: 24, fontWeight: '300' },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    overallHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    status: { color: t.text.dim, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
+    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+    syncNote: { color: t.text.faint, fontSize: 12, marginTop: 6 },
+    syncError: { color: t.semantic.warn, fontSize: 12, marginTop: 6 },
+    conflictIntro: { color: t.text.dim, fontSize: 13 },
+    conflictRow: { gap: 6, marginTop: 8, borderTopWidth: 1, borderTopColor: t.surfaces.line, paddingTop: 8 },
+    conflictInfo: { gap: 4 },
+    candidates: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+    candidateLabel: { color: t.text.dim, fontSize: 13 },
+    candidate: { fontSize: 13, fontWeight: '800' },
+    conflictActions: { flexDirection: 'row', gap: 8 },
+    sectionsHeading: { fontSize: 16, marginTop: 4 },
+    divider: { backgroundColor: t.surfaces.line },
+    empty: { color: t.text.dim },
+    emptyWrap: { gap: 10, alignItems: 'flex-start' },
+    rowBody: { flex: 1, gap: 6 },
+    rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    code: { color: t.text.dim, fontSize: 13, fontWeight: '700' },
+    sectionName: { color: t.text.primary, fontSize: 15, fontWeight: '600', flexShrink: 1 },
+    chevron: { color: t.text.faint, fontSize: 24, fontWeight: '300' },
+  });

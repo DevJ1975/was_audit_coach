@@ -9,7 +9,8 @@ import { useCorrectiveActions, type CaItemMeta } from '@/hooks/useCorrectiveActi
 import { isOverdue } from '@/domain/analytics';
 import { nowIso } from '@/db/ids';
 import type { CAStatus, CorrectiveAction } from '@/db/types';
-import { ratingColors, surfaces, text as textTokens, layout, semantic } from '@/theme/tokens';
+import { ratingColors, layout, type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 const STATUSES: CAStatus[] = ['open', 'in_progress', 'verified', 'closed'];
 const STATUS_LABEL: Record<CAStatus, string> = {
@@ -29,6 +30,7 @@ function CARow({
   onCommit: (ca: CorrectiveAction) => void;
   onOpenItem: () => void;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const [assigned, setAssigned] = useState(ca.assigned_to ?? '');
   const [due, setDue] = useState(ca.due_date ?? '');
   const overdue = isOverdue(ca, nowIso());
@@ -99,6 +101,7 @@ export default function CorrectiveActionsScreen(): React.ReactElement {
   const { auditId } = useLocalSearchParams<{ auditId: string }>();
   const router = useRouter();
   const session = useSession();
+  const styles = useThemedStyles(makeStyles);
   const { audit, cas, itemMeta, update } = useCorrectiveActions(auditId);
 
   const openCount = cas.filter((c) => c.status === 'open' || c.status === 'in_progress').length;
@@ -129,20 +132,21 @@ export default function CorrectiveActionsScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  overdueCard: { borderColor: semantic.danger, borderWidth: 1 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  code: { color: textTokens.primary, fontSize: 15, fontWeight: '800' },
-  tag: { fontSize: 13, fontWeight: '800', marginLeft: 'auto' },
-  overdue: { color: semantic.danger, fontSize: 11, fontWeight: '800' },
-  fields: { flexDirection: 'row', gap: 8, marginTop: 6 },
-  field: { flex: 1, backgroundColor: surfaces.raised },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  chip: { backgroundColor: surfaces.raised, minHeight: layout.minTapTarget, justifyContent: 'center' },
-  chipOn: { backgroundColor: surfaces.line },
-  chipText: { fontSize: 12 },
-  req: { color: textTokens.primary, fontSize: 13, lineHeight: 18, marginTop: 4 },
-  meta: { color: textTokens.faint, fontSize: 11 },
-  closedRow: { gap: 2, marginTop: 6, alignItems: 'flex-start' },
-  empty: { color: textTokens.dim },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    overdueCard: { borderColor: t.semantic.danger, borderWidth: 1 },
+    head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    code: { color: t.text.primary, fontSize: 15, fontWeight: '800' },
+    tag: { fontSize: 13, fontWeight: '800', marginLeft: 'auto' },
+    overdue: { color: t.semantic.danger, fontSize: 11, fontWeight: '800' },
+    fields: { flexDirection: 'row', gap: 8, marginTop: 6 },
+    field: { flex: 1, backgroundColor: t.surfaces.raised },
+    statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+    chip: { backgroundColor: t.surfaces.raised, minHeight: layout.minTapTarget, justifyContent: 'center' },
+    chipOn: { backgroundColor: t.surfaces.line },
+    chipText: { fontSize: 12 },
+    req: { color: t.text.primary, fontSize: 13, lineHeight: 18, marginTop: 4 },
+    meta: { color: t.text.faint, fontSize: 11 },
+    closedRow: { gap: 2, marginTop: 6, alignItems: 'flex-start' },
+    empty: { color: t.text.dim },
+  });
