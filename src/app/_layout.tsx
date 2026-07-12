@@ -8,8 +8,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
 import { AuthProvider } from '@/auth/AuthProvider';
 import { RepoProvider } from '@/db/RepoProvider';
-import { BrandLogo, AppFooter } from '@/components/branding';
-import { HeaderAccount } from '@/components/HeaderAccount';
 import { paperThemes } from '@/theme/paperTheme';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { registerServiceWorker } from '@/pwa/registerSw';
@@ -38,14 +36,13 @@ const paperSettings = {
 };
 
 /**
- * The app tree, themed by the active scheme. Lives under ThemeProvider so it can
- * read useTheme() and drive Paper, the status bar, and the native root color.
+ * The app tree, themed by the active scheme. The root Stack hosts the bottom-tab
+ * group and pushes audit-scoped screens over it (covering the tab bar). The
+ * account control + brand header now live inside the (tabs) group.
  */
 function ThemedApp(): React.ReactElement {
   const { scheme, palette } = useTheme();
 
-  // Keep the native root background in sync so navigation/rotation never flashes
-  // the wrong color. Best-effort / no-op on web.
   React.useEffect(() => {
     void SystemUI.setBackgroundColorAsync(palette.surfaces.bg).catch(() => {});
   }, [palette.surfaces.bg]);
@@ -64,19 +61,10 @@ function ThemedApp(): React.ReactElement {
                 contentStyle: { backgroundColor: palette.surfaces.bg },
               }}
             >
-              {/* Root shows the WLS logo in the header; inner screens set their own titles. */}
-              <Stack.Screen
-                name="index"
-                options={{
-                  headerTitle: () => <BrandLogo />,
-                  headerTitleAlign: 'center',
-                  headerRight: () => <HeaderAccount />,
-                }}
-              />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="login" options={{ title: 'Sign in', presentation: 'modal' }} />
-              <Stack.Screen name="audit/new" options={{ title: 'New Audit', presentation: 'modal' }} />
+              <Stack.Screen name="audit/new" options={{ title: 'New audit', presentation: 'modal' }} />
             </Stack>
-            <AppFooter />
           </View>
         </RepoProvider>
       </AuthProvider>
@@ -97,13 +85,10 @@ export default function RootLayout(): React.ReactElement {
     'IBMPlexMono-SemiBold': IBMPlexMono_600SemiBold,
   });
 
-  // Offline web shell (PWA). No-op on native and in dev. Registered from the
-  // component lifecycle so module evaluation (tests, static passes) stays
-  // side-effect free.
   React.useEffect(() => registerServiceWorker(), []);
 
-  // Hold the first paint until fonts are ready (avoids a system-font flash),
-  // but never block forever — on a font error fall back to system fonts.
+  // Hold first paint until fonts are ready (avoids a system-font flash); never
+  // block forever — on a font error fall back to system fonts.
   if (!fontsLoaded && !fontError) {
     return (
       <SafeAreaProvider>

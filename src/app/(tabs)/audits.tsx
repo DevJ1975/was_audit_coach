@@ -2,9 +2,8 @@ import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ActivityIndicator, Banner, Text } from 'react-native-paper';
-import { Row, Button, Title } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { AuditCard } from '@/components/AuditCard';
 import { EmptyState } from '@/components/EmptyState';
 import { useAudits } from '@/hooks/useAudit';
@@ -20,23 +19,11 @@ export default function AuditListScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { palette } = useTheme();
 
-  // Non-list chrome rides in the FlatList header so the whole screen scrolls as
-  // one and the audit list virtualizes (it grows unbounded over a user's life).
   const header = (
     <View style={styles.headerBlock}>
       <View style={styles.header}>
-        <Title>Audits</Title>
         <Button label="New audit" icon="plus" onPress={() => router.push('/audit/new')} />
       </View>
-
-      {/* Soteria chat (Phase C4) — corpus-grounded OSHA reference, online-only. */}
-      <Row onPress={() => router.push('/chat')}>
-        <View style={styles.rowBody}>
-          <Text style={styles.soteriaTitle}>Ask Soteria</Text>
-          <Text style={styles.soteriaSub}>Federal & state OSHA reference — every answer cited</Text>
-        </View>
-        <MaterialCommunityIcons name="chevron-right" size={24} color={palette.text.faint} />
-      </Row>
 
       {IS_PLACEHOLDER ? (
         <Banner visible elevation={1} style={styles.notice} contentStyle={styles.noticeContent}>
@@ -47,8 +34,6 @@ export default function AuditListScreen(): React.ReactElement {
         </Banner>
       ) : null}
 
-      {/* Cloud discovery — audits created on other devices (or before a
-          reinstall) materialize locally. Signed-in only; offline unaffected. */}
       {cloud.available ? (
         <View style={styles.cloudRow}>
           <Button
@@ -76,7 +61,7 @@ export default function AuditListScreen(): React.ReactElement {
   );
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <FlatList
         data={audits}
         keyExtractor={(a) => a.id}
@@ -106,7 +91,7 @@ const makeStyles = (t: Palette) =>
     screen: { flex: 1, backgroundColor: t.surfaces.bg },
     listContent: { padding: layout.gap, gap: layout.gap },
     headerBlock: { gap: layout.gap },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+    header: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
     notice: { backgroundColor: t.surfaces.raised, borderColor: t.semantic.warn, borderWidth: 1, borderRadius: 8 },
     noticeContent: { paddingVertical: 4 },
     noticeText: { color: t.semantic.warn, fontSize: 12 },
@@ -114,13 +99,4 @@ const makeStyles = (t: Palette) =>
     loading: { paddingVertical: 24 },
     cloudRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
     cloudNote: { color: t.text.dim, fontSize: 12 },
-    empty: { padding: 24, alignItems: 'center', gap: 8 },
-    emptyBody: { color: t.text.dim, textAlign: 'center', fontSize: 14 },
-    rowBody: { flex: 1, gap: 4 },
-    soteriaTitle: { color: t.text.primary, fontSize: 16, fontWeight: '700' },
-    soteriaSub: { color: t.text.dim, fontSize: 12 },
-    rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    auditTitle: { color: t.text.primary, fontSize: 16, fontWeight: '600', flexShrink: 1 },
-    rowMeta: { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
-    meta: { color: t.text.dim, fontSize: 12 },
   });
