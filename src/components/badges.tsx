@@ -4,6 +4,7 @@ import { Surface } from 'react-native-paper';
 import type { Rating } from '@soteria/scoring-engine';
 import { ratingColors } from '@/theme/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { ColorScheme } from '@/theme/tokens';
 
 /** Small color dot for a rating (item lists). Muted when unrated. */
@@ -108,14 +109,15 @@ export function SavedFlash({ status }: { status: SaveStatus }): React.ReactEleme
   const textColor = isError ? palette.semantic.warn : palette.semantic.success;
   return (
     <View style={[savedStyles.pill, { backgroundColor: pillBg }]}>
+      <MaterialCommunityIcons name={isError ? 'alert-circle' : 'check-circle'} size={13} color={textColor} />
       <Text style={[savedStyles.text, { color: textColor }]}>
-        {isError ? '⚠ Save failed — keep editing to retry' : '✓ Saved'}
+        {isError ? 'Save failed — keep editing to retry' : 'Saved'}
       </Text>
     </View>
   );
 }
 
 const savedStyles = StyleSheet.create({
-  pill: { alignSelf: 'flex-end', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-end', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   text: { fontSize: 12, fontWeight: '700' },
 });

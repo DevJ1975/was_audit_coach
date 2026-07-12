@@ -51,7 +51,7 @@ function CitationCard({ c }: { c: SoteriaCitation }): React.ReactElement {
         </Text>
         <Text style={styles.citationMeta}>
           {c.jurisdiction}
-          {c.last_amended ? ` · amended ${c.last_amended}` : ''} · ecfr.gov ↗
+          {c.last_amended ? ` · amended ${c.last_amended}` : ''} · ecfr.gov
         </Text>
       </View>
     </Pressable>

@@ -26,7 +26,8 @@ import {
   type CaptureResult,
 } from '@/attachments/capture';
 import { layout, type Palette } from '@/theme/tokens';
-import { useThemedStyles } from '@/theme/ThemeProvider';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // 24pt delete badge + 12pt slop on every edge = a 48pt touch target (NN #10).
 const DELETE_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 };
@@ -34,6 +35,7 @@ const DELETE_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 };
 export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React.ReactElement {
   const { attachments, add, remove, resolveUri } = useAttachments(auditItemId);
   const styles = useThemedStyles(makeStyles);
+  const { palette } = useTheme();
   const recorder = useRef(new VoiceRecorder());
   const player = useRef(createAudioPlayer());
   const busyRef = useRef(false); // synchronous guard: blocks double-taps before state settles
@@ -132,10 +134,11 @@ export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React
     <Card>
       <Subtitle>Evidence</Subtitle>
       <View style={styles.actions}>
-        <Button label="Camera" variant="secondary" onPress={() => addPhoto(takePhoto)} disabled={busy || recording} />
-        <Button label="Library" variant="secondary" onPress={() => addPhoto(pickPhoto)} disabled={busy || recording} />
+        <Button icon="camera" label="Camera" variant="secondary" onPress={() => addPhoto(takePhoto)} disabled={busy || recording} />
+        <Button icon="image-multiple" label="Library" variant="secondary" onPress={() => addPhoto(pickPhoto)} disabled={busy || recording} />
         <Button
-          label={recording ? '■ Stop' : '● Record'}
+          label={recording ? 'Stop' : 'Record'}
+          icon={recording ? 'stop' : 'record'}
           variant={recording ? 'primary' : 'secondary'}
           onPress={toggleRecord}
           disabled={busy}
@@ -154,7 +157,8 @@ export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React
                     <Image source={{ uri: a.uri }} style={styles.thumb} />
                   ) : (
                     <View style={[styles.thumb, styles.remoteThumb]}>
-                      <Text style={styles.remoteThumbText}>☁ Photo</Text>
+                      <MaterialCommunityIcons name="cloud-outline" size={22} color={palette.text.dim} />
+                      <Text style={styles.remoteThumbText}>Photo</Text>
                     </View>
                   )}
                 </Pressable>
@@ -164,13 +168,17 @@ export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React
                   hitSlop={DELETE_HIT_SLOP}
                   accessibilityLabel="Delete photo"
                 >
-                  <Text style={styles.delX}>✕</Text>
+                  <MaterialCommunityIcons name="close" size={14} color="#fff" />
                 </Pressable>
               </View>
             ) : (
               <View key={a.id} style={styles.voice}>
                 <Pressable onPress={() => void playVoice(a)} style={styles.voicePlay} accessibilityLabel="Play voice note">
-                  <Text style={styles.voiceText}>▶ Voice note{a.uri ? '' : ' ☁'}</Text>
+                  <View style={styles.voiceInner}>
+                    <MaterialCommunityIcons name="play" size={16} color={palette.brand.accent} />
+                    <Text style={styles.voiceText}>Voice note</Text>
+                    {!a.uri ? <MaterialCommunityIcons name="cloud-outline" size={13} color={palette.text.dim} /> : null}
+                  </View>
                 </Pressable>
                 <Pressable
                   onPress={() => deleteAttachment(a.id, a.uri)}
@@ -204,6 +212,7 @@ const makeStyles = (t: Palette) =>
     remoteThumb: {
       alignItems: 'center',
       justifyContent: 'center',
+      gap: 2,
       backgroundColor: t.surfaces.raised,
       borderWidth: 1,
       borderColor: t.surfaces.line,
@@ -220,7 +229,6 @@ const makeStyles = (t: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    delX: { color: '#fff', fontSize: 13, fontWeight: '800' },
     voice: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -233,6 +241,7 @@ const makeStyles = (t: Palette) =>
       borderColor: t.surfaces.line,
     },
     voicePlay: { minHeight: layout.minTapTarget, justifyContent: 'center' },
+    voiceInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     voiceText: { color: t.brand.accent, fontWeight: '700' },
     voiceDel: { minHeight: layout.minTapTarget, justifyContent: 'center', paddingHorizontal: 8 },
     delText: { color: t.semantic.danger, fontWeight: '600' },

@@ -9,12 +9,14 @@ import { useAuditData } from '@/hooks/useAudit';
 import { compareByCode } from '@/domain/ordering';
 import { sectionNames, libraryItem } from '@/seed';
 import { type Palette } from '@/theme/tokens';
-import { useThemedStyles } from '@/theme/ThemeProvider';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function ItemListScreen(): React.ReactElement {
   const { auditId, code } = useLocalSearchParams<{ auditId: string; code: string }>();
   const router = useRouter();
   const styles = useThemedStyles(makeStyles);
+  const { palette } = useTheme();
   const { items, score } = useAuditData(auditId);
 
   const sectionItems = items
@@ -66,7 +68,7 @@ export default function ItemListScreen(): React.ReactElement {
                 {lib?.requirement ?? '—'}
               </Text>
             </View>
-            <Text style={styles.chevron}>›</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={palette.text.faint} />
           </Row>
         );
       })}

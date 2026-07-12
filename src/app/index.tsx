@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ActivityIndicator, Banner, Text } from 'react-native-paper';
 import { Screen, Row, Button, Title, Subtitle, Mono } from '@/components/ui';
 import { PrivBadge } from '@/components/badges';
@@ -30,7 +31,7 @@ export default function AuditListScreen(): React.ReactElement {
           <Text style={styles.soteriaTitle}>Ask Soteria</Text>
           <Text style={styles.soteriaSub}>Federal & state OSHA reference — every answer cited</Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
+        <MaterialCommunityIcons name="chevron-right" size={24} color={palette.text.faint} />
       </Row>
 
       {IS_PLACEHOLDER ? (
@@ -92,7 +93,7 @@ export default function AuditListScreen(): React.ReactElement {
               <Mono style={styles.meta}>· {new Date(a.created_at).toLocaleDateString()}</Mono>
             </View>
           </View>
-          <Text style={styles.chevron}>›</Text>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={palette.text.faint} />
         </Row>
       ))}
     </Screen>

@@ -2,7 +2,7 @@
   "name": "soteria-audit",
   "version": "0.2.0",
   "private": true,
-  "description": "Soteria Audit (WLS Audit Coach) \u2014 offline-first EHS audit platform. Scoring parity is sacred.",
+  "description": "Soteria Audit (WLS Audit Coach) — offline-first EHS audit platform. Scoring parity is sacred.",
   "main": "expo-router/entry",
   "workspaces": [
     "packages/*"
@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",
+    "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@supabase/supabase-js": "^2.110.2",
     "@types/react": "~19.0.10",
