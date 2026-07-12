@@ -7,7 +7,8 @@
  * per-rating `ratingOn` contrast color so "High" / "Very High" stay legible.
  */
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { RATINGS, type Rating } from '@soteria/scoring-engine';
 import { ratingColors, ratingOn, layout, type Palette } from '@/theme/tokens';
 import { useThemedStyles } from '@/theme/ThemeProvider';
@@ -34,7 +35,11 @@ export function RatingSelector({
             accessibilityState={{ selected, disabled: !!disabled }}
             accessibilityLabel={rating}
             disabled={disabled}
-            onPress={() => onChange(rating)}
+            onPress={() => {
+              // Tactile confirmation for a rating tap — helps gloved hands (NN #10).
+              if (Platform.OS !== 'web') void Haptics.selectionAsync();
+              onChange(rating);
+            }}
             style={[
               styles.chip,
               { borderColor: color },

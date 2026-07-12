@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Animated, LayoutAnimation, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ActivityIndicator, TextInput, Text } from 'react-native-paper';
 import { Screen, Card, Button, Subtitle, Body, Mono } from '@/components/ui';
@@ -34,16 +34,20 @@ function AiDraftBox({
 }): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const [draft, setDraft] = useState(text);
+  const fade = useRef(new Animated.Value(0)).current;
   useEffect(() => setDraft(text), [text]);
+  useEffect(() => {
+    Animated.timing(fade, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+  }, [fade]);
   return (
-    <View style={styles.aiBox}>
+    <Animated.View style={[styles.aiBox, { opacity: fade }]}>
       <Text style={styles.aiLabel}>AI draft — review &amp; edit, then Accept</Text>
       <TextInput mode="outlined" multiline value={draft} onChangeText={setDraft} style={styles.textArea} />
       <View style={styles.aiActions}>
         <Button label="Discard" variant="ghost" onPress={onDiscard} />
         <Button label="Accept" variant="primary" onPress={() => onAccept(draft)} />
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -282,7 +286,14 @@ export default function ItemCardScreen(): React.ReactElement {
 
       {/* Requirement + citation (collapsible, ≥48pt toggle) */}
       <Card>
-        <Pressable onPress={() => setRequirementOpen((v) => !v)} style={styles.collapseHead} accessibilityRole="button">
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== 'web') LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setRequirementOpen((v) => !v);
+          }}
+          style={styles.collapseHead}
+          accessibilityRole="button"
+        >
           <Subtitle>Requirement</Subtitle>
           <MaterialCommunityIcons
             name={requirementOpen ? 'chevron-down' : 'chevron-right'}
