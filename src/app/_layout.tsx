@@ -13,6 +13,18 @@ import { HeaderAccount } from '@/components/HeaderAccount';
 import { paperThemes } from '@/theme/paperTheme';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { registerServiceWorker } from '@/pwa/registerSw';
+import { useFonts } from 'expo-font';
+import {
+  SourceSans3_400Regular,
+  SourceSans3_500Medium,
+  SourceSans3_600SemiBold,
+  SourceSans3_700Bold,
+} from '@expo-google-fonts/source-sans-3';
+import {
+  IBMPlexMono_400Regular,
+  IBMPlexMono_500Medium,
+  IBMPlexMono_600SemiBold,
+} from '@expo-google-fonts/ibm-plex-mono';
 
 /**
  * Route react-native-paper's icon props (Button `icon`, Chip, etc.) through
@@ -73,10 +85,33 @@ function ThemedApp(): React.ReactElement {
 }
 
 export default function RootLayout(): React.ReactElement {
+  // Brand fonts — Source Sans 3 (UI) + IBM Plex Mono (data). Each weight is
+  // registered as its own family name so the type ramp can select weights.
+  const [fontsLoaded, fontError] = useFonts({
+    'SourceSans3-Regular': SourceSans3_400Regular,
+    'SourceSans3-Medium': SourceSans3_500Medium,
+    'SourceSans3-SemiBold': SourceSans3_600SemiBold,
+    'SourceSans3-Bold': SourceSans3_700Bold,
+    'IBMPlexMono-Regular': IBMPlexMono_400Regular,
+    'IBMPlexMono-Medium': IBMPlexMono_500Medium,
+    'IBMPlexMono-SemiBold': IBMPlexMono_600SemiBold,
+  });
+
   // Offline web shell (PWA). No-op on native and in dev. Registered from the
   // component lifecycle so module evaluation (tests, static passes) stays
   // side-effect free.
   React.useEffect(() => registerServiceWorker(), []);
+
+  // Hold the first paint until fonts are ready (avoids a system-font flash),
+  // but never block forever — on a font error fall back to system fonts.
+  if (!fontsLoaded && !fontError) {
+    return (
+      <SafeAreaProvider>
+        <View style={styles.boot} />
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>
@@ -88,4 +123,5 @@ export default function RootLayout(): React.ReactElement {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  boot: { flex: 1, backgroundColor: '#131417' },
 });

@@ -192,7 +192,7 @@ const makeStyles = (t: Palette) =>
     mono: { color: t.text.primary, fontFamily: typography.mono, fontSize: 13 },
     button: { borderRadius: layout.radius, justifyContent: 'center' },
     buttonContent: { minHeight: layout.minTapTarget, paddingHorizontal: 10 },
-    buttonLabel: { fontSize: 16, fontWeight: '600' },
+    buttonLabel: { fontFamily: typography.sansSemibold, fontSize: 16 },
     rowSurface: {
       backgroundColor: t.surfaces.surface,
       borderRadius: layout.radiusLg,

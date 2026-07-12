@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<defs>
+  <mask id="mSeam">
+    <circle cx="256" cy="256" r="244" fill="white"></circle>
+    <g fill="none" stroke="black" stroke-width="28" stroke-linecap="round">
+      <path d="M 256 256 C 300 232 300 120 213.6 15.6"></path><path d="M 256 256 C 280 300 392 300 496.4 213.6"></path><path d="M 256 256 C 212 280 212 392 298.4 496.4"></path><path d="M 256 256 C 232 212 120 212 15.6 298.4"></path>
+    </g>
+  </mask>
+</defs>
+<circle cx="256" cy="256" r="244" fill="currentColor" mask="url(#mSeam)"></circle>
+</svg>

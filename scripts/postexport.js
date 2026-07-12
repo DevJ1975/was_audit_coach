@@ -22,7 +22,7 @@ const inject = [
   '<meta name="apple-mobile-web-app-capable" content="yes">',
   '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
   // Dark-first: never flash white while the bundle loads.
-  '<style>html,body{background:#0E141B}</style>',
+  '<style>html,body{background:#131417}</style>',
 ].join('\n');
 
 html = html.replace('</head>', `${inject}</head>`);

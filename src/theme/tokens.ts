@@ -1,17 +1,15 @@
 /**
- * Soteria design tokens. Now dual-palette (light + dark). The auditor is often
- * in a poorly lit plant wearing gloves, so DARK stays the field default, but a
- * light theme is fully supported and selected at runtime via ThemeProvider.
+ * WLS Audit Coach design tokens — sourced from the official design-system kit
+ * (assets/branding + the kit's react-native-theme.js). Dual-palette (light +
+ * dark). DARK stays the field default (poorly-lit plant, gloves — NN #10).
  *
- * Rating & tier colors are SEMANTIC and CONSTANT across all tenants AND across
- * both themes (OSHA signal palette). White-labeling overrides `brand` ONLY —
- * never rating or tier colors. See Non-Negotiable #7.
+ * Rating & tier colors are SEMANTIC and CONSTANT (OSHA signal palette, NN #7):
+ * they are NOT themeable brand tokens and never change per theme or tenant.
+ * White-labeling overrides `brand` only.
  *
- * The WLS brand accent is RED. It is reserved for actions/identity (buttons,
- * links, focus, logo) and must never be read as the "High risk" rating red —
- * rating reds are used only for risk (dots, chips, finding borders).
+ * Brand accent = WLS red (#CE1F30 light / #E4576B dark) — the single main action
+ * / danger. Rating reds (High / Very High) remain the risk signal, kept distinct.
  */
-
 import type { Rating, Tier } from '@soteria/scoring-engine';
 
 /** The shape every palette conforms to. Screens read this via useTheme(). */
@@ -23,18 +21,19 @@ export interface Palette {
   semantic: { warn: string; danger: string; success: string };
 }
 
-const darkPalette: Palette = {
-  surfaces: { bg: '#0E141B', surface: '#16202B', raised: '#1F2A37', line: '#2E3B49' },
-  text: { primary: '#EDF2F7', dim: '#9FB0C0', faint: '#64748B' },
-  brand: { accent: '#E1251B', default: '#E1251B', accentHover: '#F0463C', onAccent: '#FFFFFF', soft: '#33181A' },
-  semantic: { warn: '#E7C33B', danger: '#D9483B', success: '#3CA96B' },
+// Mapped from the kit's lightTheme.colors / darkTheme.colors into the app seam.
+const lightPalette: Palette = {
+  surfaces: { bg: '#F7F7F8', surface: '#FFFFFF', raised: '#FFFFFF', line: '#E4E6E9' },
+  text: { primary: '#1E2023', dim: '#62666C', faint: '#83878D' },
+  brand: { accent: '#CE1F30', default: '#CE1F30', accentHover: '#AE1123', onAccent: '#FFFFFF', soft: '#FCEDEE' },
+  semantic: { warn: '#B45309', danger: '#CE1F30', success: '#1D8A50' },
 };
 
-const lightPalette: Palette = {
-  surfaces: { bg: '#F5F7FA', surface: '#FFFFFF', raised: '#EDF1F6', line: '#DCE3EB' },
-  text: { primary: '#16202B', dim: '#47586A', faint: '#7C8C9B' },
-  brand: { accent: '#D21F16', default: '#D21F16', accentHover: '#B71C13', onAccent: '#FFFFFF', soft: '#FCEBEA' },
-  semantic: { warn: '#B7860A', danger: '#C4362A', success: '#2E8B57' },
+const darkPalette: Palette = {
+  surfaces: { bg: '#131417', surface: '#1E2023', raised: '#26282C', line: '#33363B' },
+  text: { primary: '#F2F3F4', dim: '#ACB0B5', faint: '#83878D' },
+  brand: { accent: '#E4576B', default: '#E4576B', accentHover: '#EB7284', onAccent: '#FFFFFF', soft: 'rgba(228,87,107,0.14)' },
+  semantic: { warn: '#E8A317', danger: '#E4576B', success: '#3DBE7E' },
 };
 
 export type ColorScheme = 'dark' | 'light';
@@ -42,15 +41,14 @@ export const palettes: Record<ColorScheme, Palette> = { dark: darkPalette, light
 
 /**
  * Back-compat static exports resolve to the DARK palette (the field default).
- * They keep not-yet-migrated modules compiling; migrated screens/components read
- * the ACTIVE palette from useTheme() instead. Do not add new usages of these.
+ * Migrated screens/components read the ACTIVE palette from useTheme().
  */
 export const surfaces = darkPalette.surfaces;
 export const text = darkPalette.text;
 export const brand = darkPalette.brand;
 export const semantic = darkPalette.semantic;
 
-/** CONSTANT across tenants AND themes. Do not theme these. */
+/** CONSTANT across tenants AND themes (OSHA signal palette, NN #7). Do not theme. */
 export const ratingColors: Record<Rating, string> = {
   'Best Practice': '#17B890',
   Verified: '#3CA96B',
@@ -61,12 +59,7 @@ export const ratingColors: Record<Rating, string> = {
   'Not Applicable': '#5F6E7D',
 };
 
-/**
- * The foreground/text color to place ON a rating fill, contrast-checked (WCAG AA)
- * so a filled chip label stays legible — white on the dark reds, near-black on
- * the light greens/ambers. CONSTANT across themes. Fixes the old single-color
- * label that was unreadable on "Very High" / "High".
- */
+/** Contrast-checked (WCAG AA) label color to place ON a rating fill. CONSTANT. */
 export const ratingOn: Record<Rating, string> = {
   'Best Practice': '#05231B',
   Verified: '#04180F',
@@ -86,29 +79,40 @@ export const tierColors: Record<Tier, string> = {
   Developing: '#5F6E7D',
 };
 
-/** Layout constants driven by field-use constraints (gloves, glare). Theme-independent. */
+/** Corners from the kit: buttons/inputs 12, cards 16, dialogs 24. Tap target ≥48 (NN #10). */
 export const layout = {
-  /** Minimum tap target — Non-Negotiable #10. */
   minTapTarget: 48,
   radius: 12,
   radiusLg: 16,
   gap: 12,
 } as const;
 
-/** 8pt-based spacing scale. Theme-independent. */
+/** 4px spacing grid (kit spacing scale). Theme-independent. */
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 
-/** Typographic ramp — size / line-height / weight / tracking. Theme-independent. */
+/**
+ * Type ramp from the kit — Source Sans 3 (UI). Weight is carried by the family
+ * name (each @expo-google-fonts weight is its own family); fonts are loaded in
+ * src/app/_layout.tsx.
+ */
 export const typeRamp = {
-  title: { fontSize: 21, lineHeight: 27, fontWeight: '800', letterSpacing: 0.2 },
-  label: { fontSize: 13, lineHeight: 16, fontWeight: '600', letterSpacing: 0.3 },
-  body: { fontSize: 15, lineHeight: 22, fontWeight: '400' },
-  caption: { fontSize: 12, lineHeight: 16, fontWeight: '500' },
+  display: { fontFamily: 'SourceSans3-Bold', fontSize: 34, lineHeight: 40 },
+  headline: { fontFamily: 'SourceSans3-Bold', fontSize: 26, lineHeight: 32 },
+  title: { fontFamily: 'SourceSans3-SemiBold', fontSize: 20, lineHeight: 26 },
+  titleSm: { fontFamily: 'SourceSans3-SemiBold', fontSize: 17, lineHeight: 22 },
+  bodyLg: { fontFamily: 'SourceSans3-Regular', fontSize: 17, lineHeight: 24 },
+  body: { fontFamily: 'SourceSans3-Regular', fontSize: 15, lineHeight: 22 },
+  bodySm: { fontFamily: 'SourceSans3-Regular', fontSize: 13, lineHeight: 18 },
+  label: { fontFamily: 'SourceSans3-SemiBold', fontSize: 13, lineHeight: 16, letterSpacing: 0.13 },
+  caption: { fontFamily: 'SourceSans3-Regular', fontSize: 12, lineHeight: 16 },
 } as const;
 
-/** Item codes and scores render in tabular monospace. Theme-independent. */
+/** Font families for direct use (mono data cells, wordmark). */
 export const typography = {
-  mono: 'Menlo, Consolas, "Roboto Mono", monospace',
+  sans: 'SourceSans3-Regular',
+  sansSemibold: 'SourceSans3-SemiBold',
+  sansBold: 'SourceSans3-Bold',
+  mono: 'IBMPlexMono-Medium',
   tabularNums: { fontVariant: ['tabular-nums'] as const },
 } as const;
 
@@ -121,6 +125,8 @@ export const tokens = {
   ratingOn,
   tierColors,
   layout,
+  space,
+  typeRamp,
   typography,
 } as const;
 
