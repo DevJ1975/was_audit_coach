@@ -77,6 +77,11 @@ export default function LoginScreen(): React.ReactElement {
             />
           ) : null}
           <Button
+            label="Change password"
+            variant="secondary"
+            onPress={() => router.push('/change-password')}
+          />
+          <Button
             label={busy ? 'Signing out…' : 'Sign out'}
             variant="secondary"
             onPress={() => void doSignOut()}

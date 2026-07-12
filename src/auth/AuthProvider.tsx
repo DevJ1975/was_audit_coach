@@ -48,6 +48,8 @@ interface AuthContextValue {
     orgName: string,
   ) => Promise<{ error: string | null; needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
+  /** Update the signed-in user's password. Requires an active session. */
+  changePassword: (newPassword: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -117,6 +119,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
       async signOut() {
         await getSupabase()?.auth.signOut();
         setSession(null);
+      },
+      async changePassword(newPassword) {
+        const supabase = getSupabase();
+        if (!supabase) return { error: 'Backend not configured on this build.' };
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        return { error: error?.message ?? null };
       },
     }),
     [session, loading],
