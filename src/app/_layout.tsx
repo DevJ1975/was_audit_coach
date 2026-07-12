@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Stack, Link } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
-import { AuthProvider, useAuth } from '@/auth/AuthProvider';
+import { AuthProvider } from '@/auth/AuthProvider';
 import { RepoProvider } from '@/db/RepoProvider';
 import { BrandLogo, AppFooter } from '@/components/branding';
+import { HeaderAccount } from '@/components/HeaderAccount';
 import { paperThemes } from '@/theme/paperTheme';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { registerServiceWorker } from '@/pwa/registerSw';
@@ -23,18 +24,6 @@ const paperSettings = {
     <MaterialCommunityIcons name={props.name as PaperIconName} color={props.color} size={props.size} />
   ),
 };
-
-/** Header account link — reflects the session instead of always "Sign in". */
-function AccountLink(): React.ReactElement {
-  const { session } = useAuth();
-  const { palette } = useTheme();
-  const label = session?.user.email ? session.user.email.split('@')[0]! : 'Sign in';
-  return (
-    <Link href="/login" style={[styles.signIn, { color: palette.brand.accent }]} numberOfLines={1}>
-      {label}
-    </Link>
-  );
-}
 
 /**
  * The app tree, themed by the active scheme. Lives under ThemeProvider so it can
@@ -69,7 +58,7 @@ function ThemedApp(): React.ReactElement {
                 options={{
                   headerTitle: () => <BrandLogo />,
                   headerTitleAlign: 'center',
-                  headerRight: () => <AccountLink />,
+                  headerRight: () => <HeaderAccount />,
                 }}
               />
               <Stack.Screen name="login" options={{ title: 'Sign in', presentation: 'modal' }} />
@@ -99,5 +88,4 @@ export default function RootLayout(): React.ReactElement {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  signIn: { fontWeight: '600', paddingHorizontal: 12, fontSize: 15, maxWidth: 140 },
 });
