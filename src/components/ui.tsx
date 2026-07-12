@@ -102,6 +102,21 @@ export function Mono({ children, style }: { children: React.ReactNode; style?: S
   const styles = useThemedStyles(makeStyles);
   return <PaperText style={[styles.mono, style]}>{children}</PaperText>;
 }
+/** Uppercase eyebrow — e.g. "Section 2 of 4". */
+export function Overline({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  const styles = useThemedStyles(makeStyles);
+  return <PaperText style={[styles.overline, style]}>{children}</PaperText>;
+}
+/** 17px section heading (distinct from the 13px label Subtitle). */
+export function SectionTitle({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  const styles = useThemedStyles(makeStyles);
+  return <PaperText style={[styles.sectionTitle, style]}>{children}</PaperText>;
+}
+/** IBM Plex Mono, tabular figures — for scores, IDs, counts, timestamps. */
+export function DataText({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  const styles = useThemedStyles(makeStyles);
+  return <PaperText style={[styles.dataText, style]}>{children}</PaperText>;
+}
 
 export function Button({
   label,
@@ -190,6 +205,9 @@ const makeStyles = (t: Palette) =>
     subtitle: { ...typeRamp.label, color: t.text.dim },
     body: { ...typeRamp.body, color: t.text.primary },
     mono: { color: t.text.primary, fontFamily: typography.mono, fontSize: 13 },
+    overline: { ...typeRamp.overline, color: t.text.dim },
+    sectionTitle: { ...typeRamp.titleSm, color: t.text.primary },
+    dataText: { ...typeRamp.data, color: t.text.primary },
     button: { borderRadius: layout.radius, justifyContent: 'center' },
     buttonContent: { minHeight: layout.minTapTarget, paddingHorizontal: 10 },
     buttonLabel: { fontFamily: typography.sansSemibold, fontSize: 16 },

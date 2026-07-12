@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Text } from 'react-native-paper';
 import { Screen, Card, Row, Title, Subtitle, Mono } from '@/components/ui';
 import { ScoreReadout } from '@/components/ScoreReadout';
+import { ScoreRing } from '@/components/ScoreRing';
 import { PrivilegeBanner } from '@/components/badges';
 import { useAuditData } from '@/hooks/useAudit';
 import { sectionNames, sectionOrder } from '@/seed';
@@ -30,11 +31,16 @@ export default function DashboardScreen(): React.ReactElement {
 
       <Card>
         <Subtitle>Overall</Subtitle>
-        <ScoreReadout
-          rawScore={score.rawScore} effectiveMax={score.effectiveMax}
-          percent={score.percent} tier={score.tier}
-          ratedCount={score.ratedCount} itemCount={score.itemCount} size="lg"
-        />
+        <View style={styles.heroRow}>
+          <ScoreRing percent={score.percent} tier={score.tier} size={104} />
+          <View style={styles.heroReadout}>
+            <ScoreReadout
+              rawScore={score.rawScore} effectiveMax={score.effectiveMax}
+              percent={score.percent} tier={score.tier}
+              ratedCount={score.ratedCount} itemCount={score.itemCount} size="lg"
+            />
+          </View>
+        </View>
       </Card>
 
       <Card>
@@ -77,6 +83,8 @@ export default function DashboardScreen(): React.ReactElement {
 
 const makeStyles = (t: Palette) =>
   StyleSheet.create({
+    heroRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+    heroReadout: { flex: 1 },
     pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaces.raised, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
     dot: { width: 8, height: 8, borderRadius: 4 },
