@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, LayoutAnimation, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ActivityIndicator, TextInput, Text } from 'react-native-paper';
 import { Screen, Card, Button, Subtitle, Body, Mono } from '@/components/ui';
 import { RatingSelector } from '@/components/RatingSelector';
+import { Collapsible } from '@/components/Collapsible';
+import { CoachTip } from '@/components/CoachTip';
 import { AttachmentStrip } from '@/components/AttachmentStrip';
 import { SifBadge, SavedFlash, type SaveStatus } from '@/components/badges';
 import { useRepo, useSession } from '@/db/RepoProvider';
@@ -17,7 +19,6 @@ import { buildObservationPolish, buildRecommendationDraft, buildAriaCoach, type 
 import type { Rating } from '@soteria/scoring-engine';
 import { ratingColors, layout, type Palette } from '@/theme/tokens';
 import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type TextField = 'observations' | 'recommendations' | 'auditor_notes';
 const TEXT_FIELDS: TextField[] = ['observations', 'recommendations', 'auditor_notes'];
@@ -73,7 +74,6 @@ export default function ItemCardScreen(): React.ReactElement {
   const [obs, setObs] = useState('');
   const [rec, setRec] = useState('');
   const [notes, setNotes] = useState('');
-  const [requirementOpen, setRequirementOpen] = useState(true);
   const [status, setStatus] = useState<Partial<Record<TextField, SaveStatus>>>({});
 
   // AI drafting state (Phase 3). A draft is ALWAYS an editable suggestion the
@@ -284,44 +284,12 @@ export default function ItemCardScreen(): React.ReactElement {
         <Text style={styles.position}>{position >= 0 ? `${position + 1} of ${siblings.length}` : ''}</Text>
       </View>
 
-      {/* Requirement + citation (collapsible, ≥48pt toggle) */}
-      <Card>
-        <Pressable
-          onPress={() => {
-            if (Platform.OS !== 'web') LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            setRequirementOpen((v) => !v);
-          }}
-          style={styles.collapseHead}
-          accessibilityRole="button"
-        >
-          <Subtitle>Requirement</Subtitle>
-          <MaterialCommunityIcons
-            name={requirementOpen ? 'chevron-down' : 'chevron-right'}
-            size={22}
-            color={palette.text.dim}
-          />
-        </Pressable>
-        {requirementOpen ? (
-          <>
-            <Body>{lib.requirement}</Body>
-            <Mono style={styles.citation}>{lib.citation}</Mono>
-            {/* Corpus-wide Q&A (Phase C4) — the online superset of ARIA below. */}
-            <Button
-              label="Ask Soteria about this standard"
-              variant="ghost"
-              onPress={() =>
-                router.push({
-                  pathname: '/chat',
-                  params: {
-                    seed: `What does ${lib.citation} require?`,
-                    ...(audit?.state_plan ? { jurisdiction: audit.state_plan } : {}),
-                  },
-                })
-              }
-            />
-          </>
-        ) : null}
-      </Card>
+      {/* Higher-risk rating → nudge to capture proof (coach tone, never scolding) */}
+      {item.rating === 'High' || item.rating === 'Very High' ? (
+        <CoachTip title="Back up this finding">
+          A quick photo or a line of observation makes a {item.rating} rating hold up when it counts.
+        </CoachTip>
+      ) : null}
 
       {/* Evidence protocol — OPEN BY DEFAULT, accent border (Non-Negotiable #8) */}
       <Card accent={palette.brand.accent}>
@@ -424,9 +392,30 @@ export default function ItemCardScreen(): React.ReactElement {
         </Card>
       ) : null}
 
-      {/* ARIA coach — grounded Q&A, answers only from this item (Non-Negotiable #8 corpus) */}
-      <Card>
-        <Subtitle>ARIA — ask about this item</Subtitle>
+      {/* Requirement + citation — reference text, collapsed by default so the
+          evidence protocol and rating lead the card (NN #8). */}
+      <Collapsible title="Requirement" defaultOpen={false}>
+        <Body>{lib.requirement}</Body>
+        <Mono style={styles.citation}>{lib.citation}</Mono>
+        {/* Corpus-wide Q&A (Phase C4) — the online superset of ARIA below. */}
+        <Button
+          label="Ask Soteria about this standard"
+          variant="ghost"
+          onPress={() =>
+            router.push({
+              pathname: '/chat',
+              params: {
+                seed: `What does ${lib.citation} require?`,
+                ...(audit?.state_plan ? { jurisdiction: audit.state_plan } : {}),
+              },
+            })
+          }
+        />
+      </Collapsible>
+
+      {/* ARIA coach — grounded Q&A, answers only from this item (Non-Negotiable
+          #8 corpus). Collapsed by default. */}
+      <Collapsible title="ARIA — ask about this item" defaultOpen={false}>
         <TextInput
           mode="outlined"
           style={styles.textArea}
@@ -449,13 +438,14 @@ export default function ItemCardScreen(): React.ReactElement {
             <Body>{ariaAnswer}</Body>
           </View>
         ) : null}
-      </Card>
+      </Collapsible>
 
-      <Card>
-        <View style={styles.fieldHead}>
-          <Subtitle>Auditor notes</Subtitle>
-          <SavedFlash status={status.auditor_notes ?? null} />
-        </View>
+      {/* Auditor notes — private, collapsed by default. */}
+      <Collapsible
+        title="Auditor notes"
+        defaultOpen={false}
+        right={<SavedFlash status={status.auditor_notes ?? null} />}
+      >
         <TextInput
           mode="outlined"
           style={styles.textArea}
@@ -468,7 +458,7 @@ export default function ItemCardScreen(): React.ReactElement {
           }}
         />
         <View style={styles.aiRow}>{micFor('auditor_notes')}</View>
-      </Card>
+      </Collapsible>
 
       {/* Evidence capture — photo + voice (Phase 2). A finding can carry proof. */}
       <AttachmentStrip auditItemId={id} />
@@ -493,14 +483,6 @@ const makeStyles = (t: Palette) =>
     headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     code: { color: t.text.primary, fontSize: 18, fontWeight: '800' },
     position: { color: t.text.dim, fontSize: 13, marginLeft: 'auto' },
-    collapseHead: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      minHeight: layout.minTapTarget,
-      paddingVertical: 6,
-    },
-    caret: { color: t.text.dim, fontSize: 16 },
     citation: { color: t.text.dim, fontSize: 12, marginTop: 4 },
     fieldHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     textArea: {

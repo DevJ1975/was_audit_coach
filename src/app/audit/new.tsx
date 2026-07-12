@@ -1,21 +1,19 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  Button as PaperButton,
-  Chip,
-  Divider,
-  Switch,
-  TextInput,
-  Text,
-} from 'react-native-paper';
+import { Chip, Divider, Switch, TextInput, Text } from 'react-native-paper';
 import { Screen, Card, Button, Title, Subtitle, Body } from '@/components/ui';
+import { SegmentedControl, type SegOption } from '@/components/SegmentedControl';
 import { useRepo, useSession } from '@/db/RepoProvider';
 import { seedLibrary, seedQuestions, statePlans, LIBRARY_VERSION_ID } from '@/seed';
 import { layout, type Palette } from '@/theme/tokens';
 import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
 
 const STEPS = ['Facility', 'Process inventory', 'Plan & privilege'] as const;
+const YESNO: readonly SegOption<'No' | 'Yes'>[] = [
+  { label: 'No', value: 'No' },
+  { label: 'Yes', value: 'Yes' },
+];
 
 export default function NewAuditScreen(): React.ReactElement {
   const router = useRouter();
@@ -97,23 +95,11 @@ export default function NewAuditScreen(): React.ReactElement {
                 {i > 0 ? <Divider style={styles.divider} /> : null}
                 <View style={styles.qRow}>
                   <Body style={styles.qText}>{q.question}</Body>
-                  <View style={styles.yesno}>
-                    {(['No', 'Yes'] as const).map((opt) => {
-                      const on = (opt === 'Yes') === value;
-                      return (
-                        <PaperButton
-                          key={opt}
-                          mode={on ? 'contained' : 'outlined'}
-                          onPress={() => setAnswers((a) => ({ ...a, [q.key]: opt === 'Yes' }))}
-                          style={styles.ynBtn}
-                          contentStyle={styles.ynContent}
-                          labelStyle={styles.ynLabel}
-                        >
-                          {opt}
-                        </PaperButton>
-                      );
-                    })}
-                  </View>
+                  <SegmentedControl
+                    options={YESNO}
+                    value={value ? 'Yes' : 'No'}
+                    onChange={(v) => setAnswers((a) => ({ ...a, [q.key]: v === 'Yes' }))}
+                  />
                 </View>
               </View>
             );
@@ -199,10 +185,6 @@ const makeStyles = (t: Palette) =>
     divider: { backgroundColor: t.surfaces.line },
     qRow: { gap: 8, paddingVertical: 10 },
     qText: { flexShrink: 1 },
-    yesno: { flexDirection: 'row', gap: 8 },
-    ynBtn: { flex: 1, borderRadius: layout.radius },
-    ynContent: { minHeight: layout.minTapTarget },
-    ynLabel: { fontSize: 16, fontWeight: '700' },
     plans: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     planChip: { minHeight: layout.minTapTarget, justifyContent: 'center' },
     switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 8 },

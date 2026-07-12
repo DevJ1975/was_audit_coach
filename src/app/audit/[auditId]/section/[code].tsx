@@ -1,28 +1,49 @@
+/**
+ * Section screen — the audit loop's working surface. Every applicable item is an
+ * inline ChecklistItem whose RatingSelector is right there (NN #2): the auditor
+ * rates straight down the list, no drilling in. A completion ProgressBar +
+ * "Section X of Y" overline give a sense of place; a single contextual CoachTip
+ * nudges (never scolds). Observations/evidence are one tap away per item.
+ * Fully offline — every rating hits local SQLite instantly, then the score
+ * recomputes on reload.
+ */
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Screen, Card, Row, Button, Subtitle, Mono } from '@/components/ui';
+import { Screen, Card, Button, Overline, SectionTitle } from '@/components/ui';
 import { ScoreReadout } from '@/components/ScoreReadout';
-import { RatingDot, SifBadge } from '@/components/badges';
+import { ProgressBar } from '@/components/ProgressBar';
+import { CoachTip } from '@/components/CoachTip';
+import { ChecklistItem } from '@/components/ChecklistItem';
 import { useAuditData } from '@/hooks/useAudit';
+import { useRepo, useSession } from '@/db/RepoProvider';
 import { compareByCode } from '@/domain/ordering';
-import { sectionNames, libraryItem } from '@/seed';
-import { type Palette } from '@/theme/tokens';
-import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { sectionNames, sectionOrder, libraryItem } from '@/seed';
+import type { Rating } from '@soteria/scoring-engine';
 
 export default function ItemListScreen(): React.ReactElement {
   const { auditId, code } = useLocalSearchParams<{ auditId: string; code: string }>();
   const router = useRouter();
-  const styles = useThemedStyles(makeStyles);
-  const { palette } = useTheme();
-  const { items, score } = useAuditData(auditId);
+  const repo = useRepo();
+  const session = useSession();
+  const { items, score, reload } = useAuditData(auditId);
 
   const sectionItems = items
     .filter((it) => it.section_code === code && it.applicable)
     .sort(compareByCode);
   const s = score.sections[code];
+
+  // "Section X of Y" among the audit's active sections (scoping-driven order).
+  const activeSections = sectionOrder.filter((c) => score.sections[c]);
+  const posIdx = activeSections.indexOf(code);
+
+  const completion = s && s.itemCount > 0 ? (s.ratedCount / s.itemCount) * 100 : 0;
+  const done = !!s && s.itemCount > 0 && s.ratedCount === s.itemCount;
+  const highCount = sectionItems.filter((it) => it.rating === 'High' || it.rating === 'Very High').length;
+
+  async function onRate(itemId: string, rating: Rating): Promise<void> {
+    await repo.setRating(itemId, rating, session.user_id);
+    reload();
+  }
 
   return (
     <Screen>
@@ -30,7 +51,8 @@ export default function ItemListScreen(): React.ReactElement {
 
       {s ? (
         <Card>
-          <Subtitle>{sectionNames[code] ?? code}</Subtitle>
+          {posIdx >= 0 ? <Overline>{`Section ${posIdx + 1} of ${activeSections.length}`}</Overline> : null}
+          <SectionTitle>{sectionNames[code] ?? code}</SectionTitle>
           <ScoreReadout
             rawScore={s.rawScore}
             effectiveMax={s.effectiveMax}
@@ -39,49 +61,44 @@ export default function ItemListScreen(): React.ReactElement {
             ratedCount={s.ratedCount}
             itemCount={s.itemCount}
           />
+          <ProgressBar percent={completion} />
           {/* Audit Coach — technique mentor for working this checklist section. */}
           <Button
             label="Coach: how to audit this section"
             variant="ghost"
-            onPress={() =>
-              router.push({
-                pathname: `/audit/${auditId}/coach`,
-                params: { section: code },
-              })
-            }
+            onPress={() => router.push({ pathname: `/audit/${auditId}/coach`, params: { section: code } })}
           />
         </Card>
       ) : null}
 
-      {sectionItems.map((it) => {
+      {done ? (
+        <CoachTip title="Section complete">
+          Every item here is rated — nice work. Review your findings or move on to the next section.
+        </CoachTip>
+      ) : highCount > 0 ? (
+        <CoachTip title="Back up your findings">
+          You&rsquo;ve flagged {highCount} higher-risk item{highCount === 1 ? '' : 's'} here. A quick photo on
+          each makes the finding stick when it counts.
+        </CoachTip>
+      ) : null}
+
+      {sectionItems.map((it, i) => {
         const lib = libraryItem(it.item_code);
         return (
-          <Row key={it.id} testID="item-row" accent={undefined} onPress={() => router.push(`/audit/${auditId}/item/${it.id}`)}>
-            <RatingDot rating={it.rating} />
-            <View style={styles.body}>
-              <View style={styles.top}>
-                <Mono style={styles.code}>{it.item_code}</Mono>
-                {lib?.sif_potential ? <SifBadge small /> : null}
-                {it.rating ? <Text style={styles.rating}>{it.rating}</Text> : null}
-              </View>
-              <Text style={styles.req} numberOfLines={2}>
-                {lib?.requirement ?? '—'}
-              </Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color={palette.text.faint} />
-          </Row>
+          <ChecklistItem
+            key={it.id}
+            index={i + 1}
+            code={it.item_code}
+            requirement={lib?.requirement ?? '—'}
+            sif={lib?.sif_potential}
+            rating={it.rating}
+            hasObservations={!!it.observations?.trim()}
+            needsResolution={it.sync_state === 'needs_resolution'}
+            onRate={(r) => void onRate(it.id, r)}
+            onOpen={() => router.push(`/audit/${auditId}/item/${it.id}`)}
+          />
         );
       })}
     </Screen>
   );
 }
-
-const makeStyles = (t: Palette) =>
-  StyleSheet.create({
-    body: { flex: 1, gap: 4 },
-    top: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    code: { color: t.text.primary, fontSize: 14, fontWeight: '700' },
-    rating: { color: t.text.dim, fontSize: 12, fontWeight: '600', marginLeft: 'auto' },
-    req: { color: t.text.dim, fontSize: 13, lineHeight: 18 },
-    chevron: { color: t.text.faint, fontSize: 24, fontWeight: '300' },
-  });

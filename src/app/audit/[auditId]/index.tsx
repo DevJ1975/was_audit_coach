@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Divider, Text } from 'react-native-paper';
+import { Divider, Menu, Text } from 'react-native-paper';
 import { Screen, Card, Row, Button, Title, Subtitle, Mono } from '@/components/ui';
 import { ScoreReadout } from '@/components/ScoreReadout';
 import { ScoreRing } from '@/components/ScoreRing';
@@ -13,7 +13,7 @@ import { useConflicts } from '@/hooks/useConflicts';
 import { useDeleteAudit } from '@/hooks/useDeleteAudit';
 import { useRepo, useSession } from '@/db/RepoProvider';
 import { sectionNames, sectionOrder } from '@/seed';
-import { ratingColors, type Palette } from '@/theme/tokens';
+import { ratingColors, layout, type Palette } from '@/theme/tokens';
 import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Rating } from '@soteria/scoring-engine';
@@ -43,6 +43,7 @@ export default function SectionListScreen(): React.ReactElement {
   // Two-tap destructive confirm (no Alert — react-native-web doesn't support
   // multi-button alerts, and a second deliberate tap suits gloved hands).
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (confirmTimer.current) clearTimeout(confirmTimer.current); }, []);
 
@@ -98,6 +99,7 @@ export default function SectionListScreen(): React.ReactElement {
             />
           </View>
         </View>
+        {/* Primary navigation — the three places you actually go from here. */}
         <View style={styles.actions}>
           <Button label="Dashboard" variant="secondary" onPress={() => router.push(`/audit/${auditId}/dashboard`)} />
           <Button
@@ -106,49 +108,108 @@ export default function SectionListScreen(): React.ReactElement {
             onPress={() => router.push(`/audit/${auditId}/report`)}
           />
           <Button label="CA tracker" variant="secondary" onPress={() => router.push(`/audit/${auditId}/corrective-actions`)} />
-          <Button label="Scoping" variant="secondary" onPress={() => router.push(`/audit/${auditId}/scoping`)} />
+        </View>
+
+        {/* Coach + sync + overflow. Scoping, lifecycle, and delete live in the
+            menu so a destructive action is never one mis-tap from Sync. */}
+        <View style={styles.actions}>
           {/* Audit Coach — technique mentor (managed agent), distinct from Soteria chat. */}
-          <Button label="Coach" variant="secondary" onPress={() => router.push(`/audit/${auditId}/coach`)} />
+          <Button label="Coach" variant="ghost" onPress={() => router.push(`/audit/${auditId}/coach`)} />
           {available ? (
             <Button label={syncing ? 'Syncing…' : 'Sync'} variant="ghost" onPress={syncAndRefresh} disabled={syncing} />
           ) : null}
           {signInNeeded ? (
             <Button label="Sign in to sync" variant="ghost" onPress={() => router.push('/login')} />
           ) : null}
-        </View>
-
-        {/* Lifecycle — an audit can actually be closed out (and reopened). */}
-        {audit ? (
-          <View style={styles.actions}>
-            {audit.status === 'in_progress' || audit.status === 'draft' ? (
-              <Button label="Mark complete" variant="ghost" onPress={() => void setStatus('complete')} />
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <Button
+                label="More"
+                icon="dots-horizontal"
+                variant="ghost"
+                onPress={() => setMenuVisible(true)}
+              />
+            }
+          >
+            <Menu.Item
+              leadingIcon="tune-variant"
+              title="Scoping"
+              onPress={() => {
+                setMenuVisible(false);
+                router.push(`/audit/${auditId}/scoping`);
+              }}
+            />
+            {audit && (audit.status === 'in_progress' || audit.status === 'draft') ? (
+              <Menu.Item
+                leadingIcon="check-circle-outline"
+                title="Mark complete"
+                onPress={() => {
+                  setMenuVisible(false);
+                  void setStatus('complete');
+                }}
+              />
             ) : null}
-            {audit.status === 'complete' ? (
+            {audit && audit.status === 'complete' ? (
               <>
-                <Button label="Reopen" variant="ghost" onPress={() => void setStatus('in_progress')} />
-                <Button label="Archive" variant="ghost" onPress={() => void setStatus('archived')} />
+                <Menu.Item
+                  leadingIcon="lock-open-variant-outline"
+                  title="Reopen"
+                  onPress={() => {
+                    setMenuVisible(false);
+                    void setStatus('in_progress');
+                  }}
+                />
+                <Menu.Item
+                  leadingIcon="archive-outline"
+                  title="Archive"
+                  onPress={() => {
+                    setMenuVisible(false);
+                    void setStatus('archived');
+                  }}
+                />
               </>
             ) : null}
-            {audit.status === 'archived' ? (
-              <Button label="Unarchive" variant="ghost" onPress={() => void setStatus('complete')} />
+            {audit && audit.status === 'archived' ? (
+              <Menu.Item
+                leadingIcon="archive-arrow-up-outline"
+                title="Unarchive"
+                onPress={() => {
+                  setMenuVisible(false);
+                  void setStatus('complete');
+                }}
+              />
             ) : null}
+            <Divider />
+            <Menu.Item
+              leadingIcon="delete-outline"
+              title="Delete audit…"
+              titleStyle={{ color: palette.semantic.danger }}
+              onPress={() => {
+                setMenuVisible(false);
+                void onDeletePress();
+              }}
+            />
+          </Menu>
+        </View>
+
+        {/* Two-tap destructive confirm — surfaces here after the menu triggers it. */}
+        {confirmingDelete || del.deleting ? (
+          <View style={styles.dangerBar}>
+            <Text style={styles.dangerText}>
+              {del.cloudDelete
+                ? 'Delete this audit from your device AND the cloud?'
+                : 'Delete this audit from this device?'}
+            </Text>
+            <Button
+              label={del.deleting ? 'Deleting…' : 'Delete'}
+              variant="primary"
+              onPress={() => void onDeletePress()}
+              disabled={del.deleting}
+            />
           </View>
         ) : null}
-
-        <View style={styles.actions}>
-          <Button
-            label={
-              del.deleting
-                ? 'Deleting…'
-                : confirmingDelete
-                  ? (del.cloudDelete ? 'Tap again: delete from device AND cloud' : 'Tap again: delete from this device')
-                  : 'Delete audit'
-            }
-            variant="ghost"
-            onPress={() => void onDeletePress()}
-            disabled={del.deleting}
-          />
-        </View>
         {del.error ? <Text style={styles.syncError}>Delete failed: {del.error}</Text> : null}
 
         {itemSummary && !itemSummary.skipped ? (
@@ -260,6 +321,19 @@ const makeStyles = (t: Palette) =>
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
     syncNote: { color: t.text.faint, fontSize: 12, marginTop: 6 },
     syncError: { color: t.semantic.warn, fontSize: 12, marginTop: 6 },
+    dangerBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      borderWidth: 1,
+      borderColor: t.semantic.danger + '55',
+      backgroundColor: t.semantic.danger + '12',
+      borderRadius: layout.radius,
+      padding: 12,
+      marginTop: 4,
+    },
+    dangerText: { color: t.text.primary, fontSize: 13, flex: 1 },
     conflictIntro: { color: t.text.dim, fontSize: 13 },
     conflictRow: { gap: 6, marginTop: 8, borderTopWidth: 1, borderTopColor: t.surfaces.line, paddingTop: 8 },
     conflictInfo: { gap: 4 },
