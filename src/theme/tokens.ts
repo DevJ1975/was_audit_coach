@@ -14,7 +14,7 @@ import type { Rating, Tier } from '@soteria/scoring-engine';
 
 /** The shape every palette conforms to. Screens read this via useTheme(). */
 export interface Palette {
-  surfaces: { bg: string; surface: string; raised: string; line: string };
+  surfaces: { bg: string; surface: string; raised: string; sunken: string; line: string };
   text: { primary: string; dim: string; faint: string };
   /** `default` is a back-compat alias of `accent`. */
   brand: { accent: string; default: string; accentHover: string; onAccent: string; soft: string };
@@ -23,14 +23,14 @@ export interface Palette {
 
 // Mapped from the kit's lightTheme.colors / darkTheme.colors into the app seam.
 const lightPalette: Palette = {
-  surfaces: { bg: '#F7F7F8', surface: '#FFFFFF', raised: '#FFFFFF', line: '#E4E6E9' },
+  surfaces: { bg: '#F7F7F8', surface: '#FFFFFF', raised: '#FFFFFF', sunken: '#F0F1F3', line: '#E4E6E9' },
   text: { primary: '#1E2023', dim: '#62666C', faint: '#83878D' },
   brand: { accent: '#CE1F30', default: '#CE1F30', accentHover: '#AE1123', onAccent: '#FFFFFF', soft: '#FCEDEE' },
   semantic: { warn: '#B45309', danger: '#CE1F30', success: '#1D8A50' },
 };
 
 const darkPalette: Palette = {
-  surfaces: { bg: '#131417', surface: '#1E2023', raised: '#26282C', line: '#33363B' },
+  surfaces: { bg: '#131417', surface: '#1E2023', raised: '#26282C', sunken: '#0D0E10', line: '#33363B' },
   text: { primary: '#F2F3F4', dim: '#ACB0B5', faint: '#83878D' },
   brand: { accent: '#E4576B', default: '#E4576B', accentHover: '#EB7284', onAccent: '#FFFFFF', soft: 'rgba(228,87,107,0.14)' },
   semantic: { warn: '#E8A317', danger: '#E4576B', success: '#3DBE7E' },
@@ -90,6 +90,9 @@ export const layout = {
 /** 4px spacing grid (kit spacing scale). Theme-independent. */
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 
+/** Motion durations (ms) from the kit. Fades + small translates; no bounces. */
+export const motion = { fast: 120, base: 200, slow: 320 } as const;
+
 /**
  * Type ramp from the kit — Source Sans 3 (UI). Weight is carried by the family
  * name (each @expo-google-fonts weight is its own family); fonts are loaded in
@@ -105,6 +108,9 @@ export const typeRamp = {
   bodySm: { fontFamily: 'SourceSans3-Regular', fontSize: 13, lineHeight: 18 },
   label: { fontFamily: 'SourceSans3-SemiBold', fontSize: 13, lineHeight: 16, letterSpacing: 0.13 },
   caption: { fontFamily: 'SourceSans3-Regular', fontSize: 12, lineHeight: 16 },
+  overline: { fontFamily: 'SourceSans3-Bold', fontSize: 11, lineHeight: 14, letterSpacing: 0.88, textTransform: 'uppercase' },
+  data: { fontFamily: 'IBMPlexMono-Medium', fontSize: 15, lineHeight: 20 },
+  dataLg: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 28, lineHeight: 32 },
 } as const;
 
 /** Font families for direct use (mono data cells, wordmark). */

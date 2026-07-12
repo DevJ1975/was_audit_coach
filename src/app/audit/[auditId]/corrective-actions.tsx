@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Chip, TextInput, Text } from 'react-native-paper';
 import { Screen, Card, Button, Subtitle, Mono } from '@/components/ui';
 import { SifBadge, PrivilegeBanner } from '@/components/badges';
+import { EmptyState } from '@/components/EmptyState';
 import { useSession } from '@/db/RepoProvider';
 import { useCorrectiveActions, type CaItemMeta } from '@/hooks/useCorrectiveActions';
 import { isOverdue } from '@/domain/analytics';
@@ -108,14 +109,18 @@ export default function CorrectiveActionsScreen(): React.ReactElement {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: 'Corrective Actions' }} />
+      <Stack.Screen options={{ title: 'Corrective actions' }} />
       {audit?.privileged ? <PrivilegeBanner attorney={audit.attorney_of_record} /> : null}
 
       <Subtitle>
         {cas.length} corrective action{cas.length === 1 ? '' : 's'} · {openCount} open · Very High → Low
       </Subtitle>
       {cas.length === 0 ? (
-        <Text style={styles.empty}>No findings yet — rate items Low or worse to populate the queue.</Text>
+        <EmptyState
+          icon="clipboard-check-outline"
+          title="Nothing to fix yet"
+          message="Corrective actions appear here as you rate items Low or worse. Nice work keeping things tight."
+        />
       ) : null}
 
       {cas.map((ca) => (

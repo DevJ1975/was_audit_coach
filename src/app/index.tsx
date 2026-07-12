@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ActivityIndicator, Banner, Text } from 'react-native-paper';
-import { Row, Button, Title, Subtitle, Mono } from '@/components/ui';
-import { PrivBadge } from '@/components/badges';
+import { Row, Button, Title } from '@/components/ui';
+import { AuditCard } from '@/components/AuditCard';
+import { EmptyState } from '@/components/EmptyState';
 import { useAudits } from '@/hooks/useAudit';
 import { useCloudPull } from '@/hooks/useCloudPull';
 import { IS_PLACEHOLDER } from '@/seed';
@@ -25,7 +26,7 @@ export default function AuditListScreen(): React.ReactElement {
     <View style={styles.headerBlock}>
       <View style={styles.header}>
         <Title>Audits</Title>
-        <Button label="+ New Audit" onPress={() => router.push('/audit/new')} />
+        <Button label="New audit" icon="plus" onPress={() => router.push('/audit/new')} />
       </View>
 
       {/* Soteria chat (Phase C4) — corpus-grounded OSHA reference, online-only. */}
@@ -82,31 +83,16 @@ export default function AuditListScreen(): React.ReactElement {
         ListHeaderComponent={header}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Subtitle>No audits yet</Subtitle>
-              <Text style={styles.emptyBody}>
-                Start a new audit — it works fully offline. Everything is saved on this device.
-              </Text>
-            </View>
+            <EmptyState
+              icon="clipboard-check-outline"
+              title="No audits yet"
+              message="Start your first audit — it works fully offline, saved right on this device."
+              action={<Button label="New audit" icon="plus" onPress={() => router.push('/audit/new')} />}
+            />
           ) : null
         }
         renderItem={({ item: a }) => (
-          <Row onPress={() => router.push(`/audit/${a.id}`)}>
-            <View style={styles.rowBody}>
-              <View style={styles.rowTop}>
-                <Text style={styles.auditTitle} numberOfLines={1}>
-                  {a.title}
-                </Text>
-                {a.privileged ? <PrivBadge small /> : null}
-              </View>
-              <View style={styles.rowMeta}>
-                <Mono style={styles.meta}>{a.status}</Mono>
-                {a.state_plan ? <Mono style={styles.meta}>· {a.state_plan}</Mono> : null}
-                <Mono style={styles.meta}>· {new Date(a.created_at).toLocaleDateString()}</Mono>
-              </View>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color={palette.text.faint} />
-          </Row>
+          <AuditCard audit={a} onPress={() => router.push(`/audit/${a.id}`)} />
         )}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
@@ -131,7 +117,7 @@ const makeStyles = (t: Palette) =>
     empty: { padding: 24, alignItems: 'center', gap: 8 },
     emptyBody: { color: t.text.dim, textAlign: 'center', fontSize: 14 },
     rowBody: { flex: 1, gap: 4 },
-    soteriaTitle: { color: t.brand.accent, fontSize: 16, fontWeight: '700' },
+    soteriaTitle: { color: t.text.primary, fontSize: 16, fontWeight: '700' },
     soteriaSub: { color: t.text.dim, fontSize: 12 },
     rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     auditTitle: { color: t.text.primary, fontSize: 16, fontWeight: '600', flexShrink: 1 },

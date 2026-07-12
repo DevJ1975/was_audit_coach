@@ -4,6 +4,8 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Divider, Text } from 'react-native-paper';
 import { Screen, Card, Row, Button, Title, Subtitle, Mono } from '@/components/ui';
 import { ScoreReadout } from '@/components/ScoreReadout';
+import { ScoreRing } from '@/components/ScoreRing';
+import { StatusBadge } from '@/components/StatusBadge';
 import { PrivilegeBanner } from '@/components/badges';
 import { useAuditData } from '@/hooks/useAudit';
 import { useSync } from '@/hooks/useSync';
@@ -80,17 +82,22 @@ export default function SectionListScreen(): React.ReactElement {
       <Card>
         <View style={styles.overallHead}>
           <Subtitle>Overall</Subtitle>
-          {audit ? <Mono style={styles.status}>{audit.status.replace('_', ' ')}</Mono> : null}
+          {audit ? <StatusBadge status={audit.status} small /> : null}
         </View>
-        <ScoreReadout
-          rawScore={score.rawScore}
-          effectiveMax={score.effectiveMax}
-          percent={score.percent}
-          tier={score.tier}
-          ratedCount={score.ratedCount}
-          itemCount={score.itemCount}
-          size="lg"
-        />
+        <View style={styles.heroRow}>
+          <ScoreRing percent={score.percent} tier={score.tier} size={104} />
+          <View style={styles.heroReadout}>
+            <ScoreReadout
+              rawScore={score.rawScore}
+              effectiveMax={score.effectiveMax}
+              percent={score.percent}
+              tier={score.tier}
+              ratedCount={score.ratedCount}
+              itemCount={score.itemCount}
+              size="lg"
+            />
+          </View>
+        </View>
         <View style={styles.actions}>
           <Button label="Dashboard" variant="secondary" onPress={() => router.push(`/audit/${auditId}/dashboard`)} />
           <Button
@@ -247,6 +254,8 @@ export default function SectionListScreen(): React.ReactElement {
 const makeStyles = (t: Palette) =>
   StyleSheet.create({
     overallHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    heroRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 4 },
+    heroReadout: { flex: 1 },
     status: { color: t.text.dim, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
     syncNote: { color: t.text.faint, fontSize: 12, marginTop: 6 },
