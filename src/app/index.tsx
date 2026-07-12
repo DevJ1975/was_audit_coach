@@ -1,14 +1,15 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ActivityIndicator, Banner, Text } from 'react-native-paper';
-import { Screen, Row, Button, Title, Subtitle, Mono } from '@/components/ui';
+import { Row, Button, Title, Subtitle, Mono } from '@/components/ui';
 import { PrivBadge } from '@/components/badges';
 import { useAudits } from '@/hooks/useAudit';
 import { useCloudPull } from '@/hooks/useCloudPull';
 import { IS_PLACEHOLDER } from '@/seed';
-import { type Palette } from '@/theme/tokens';
+import { layout, type Palette } from '@/theme/tokens';
 import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
 
 export default function AuditListScreen(): React.ReactElement {
@@ -18,8 +19,10 @@ export default function AuditListScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { palette } = useTheme();
 
-  return (
-    <Screen>
+  // Non-list chrome rides in the FlatList header so the whole screen scrolls as
+  // one and the audit list virtualizes (it grows unbounded over a user's life).
+  const header = (
+    <View style={styles.headerBlock}>
       <View style={styles.header}>
         <Title>Audits</Title>
         <Button label="+ New Audit" onPress={() => router.push('/audit/new')} />
@@ -68,40 +71,55 @@ export default function AuditListScreen(): React.ReactElement {
       {loading ? (
         <ActivityIndicator animating color={palette.brand.accent} style={styles.loading} />
       ) : null}
+    </View>
+  );
 
-      {!loading && audits.length === 0 ? (
-        <View style={styles.empty}>
-          <Subtitle>No audits yet</Subtitle>
-          <Text style={styles.emptyBody}>
-            Start a new audit — it works fully offline. Everything is saved on this device.
-          </Text>
-        </View>
-      ) : null}
-
-      {audits.map((a) => (
-        <Row key={a.id} onPress={() => router.push(`/audit/${a.id}`)}>
-          <View style={styles.rowBody}>
-            <View style={styles.rowTop}>
-              <Text style={styles.auditTitle} numberOfLines={1}>
-                {a.title}
+  return (
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <FlatList
+        data={audits}
+        keyExtractor={(a) => a.id}
+        ListHeaderComponent={header}
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.empty}>
+              <Subtitle>No audits yet</Subtitle>
+              <Text style={styles.emptyBody}>
+                Start a new audit — it works fully offline. Everything is saved on this device.
               </Text>
-              {a.privileged ? <PrivBadge small /> : null}
             </View>
-            <View style={styles.rowMeta}>
-              <Mono style={styles.meta}>{a.status}</Mono>
-              {a.state_plan ? <Mono style={styles.meta}>· {a.state_plan}</Mono> : null}
-              <Mono style={styles.meta}>· {new Date(a.created_at).toLocaleDateString()}</Mono>
+          ) : null
+        }
+        renderItem={({ item: a }) => (
+          <Row onPress={() => router.push(`/audit/${a.id}`)}>
+            <View style={styles.rowBody}>
+              <View style={styles.rowTop}>
+                <Text style={styles.auditTitle} numberOfLines={1}>
+                  {a.title}
+                </Text>
+                {a.privileged ? <PrivBadge small /> : null}
+              </View>
+              <View style={styles.rowMeta}>
+                <Mono style={styles.meta}>{a.status}</Mono>
+                {a.state_plan ? <Mono style={styles.meta}>· {a.state_plan}</Mono> : null}
+                <Mono style={styles.meta}>· {new Date(a.created_at).toLocaleDateString()}</Mono>
+              </View>
             </View>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={palette.text.faint} />
-        </Row>
-      ))}
-    </Screen>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={palette.text.faint} />
+          </Row>
+        )}
+        contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+      />
+    </SafeAreaView>
   );
 }
 
 const makeStyles = (t: Palette) =>
   StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.surfaces.bg },
+    listContent: { padding: layout.gap, gap: layout.gap },
+    headerBlock: { gap: layout.gap },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
     notice: { backgroundColor: t.surfaces.raised, borderColor: t.semantic.warn, borderWidth: 1, borderRadius: 8 },
     noticeContent: { paddingVertical: 4 },
@@ -119,5 +137,4 @@ const makeStyles = (t: Palette) =>
     auditTitle: { color: t.text.primary, fontSize: 16, fontWeight: '600', flexShrink: 1 },
     rowMeta: { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
     meta: { color: t.text.dim, fontSize: 12 },
-    chevron: { color: t.text.faint, fontSize: 24, fontWeight: '300' },
   });
