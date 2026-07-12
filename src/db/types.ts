@@ -157,6 +157,74 @@ export interface DisclosureLogEntry {
   org_id: string;
   audit_id: string;
   actor_id: string;
-  action: 'view' | 'export';
+  /**
+   * `view`/`export` are the report-access privilege trail; `brief_generated`/
+   * `brief_accepted` record the legal-brief lifecycle (an AI narrative was
+   * drafted, and a human accepted it) at audit level — `audit_item_events`
+   * can't hold these because its `audit_item_id` FK is NOT NULL.
+   */
+  action: 'view' | 'export' | 'brief_generated' | 'brief_accepted';
   created_at: string;
+}
+
+/** One resolved, chunk-backed regulatory reference (mirrors the Edge Function's
+ *  resolveCitations output — every citation here was actually retrieved). */
+export interface BriefCitation {
+  ref: number;
+  citation: string;
+  heading_path: string;
+  jurisdiction: string;
+  source_url: string;
+  last_amended: string | null;
+}
+
+/**
+ * The accepted legal-brief narrative — the two-agent (CSP + attorney) AI output,
+ * text only. This holds NO ratings/scores: those recompute deterministically at
+ * render. `scoreSnapshot` is provenance only (what the numbers were when drafted).
+ */
+export interface ReportBriefContent {
+  /** Counsel-facing executive summary (attorney-review agent). */
+  execSummary: string;
+  /** Scope, standard basis, applicability, limitations of the audit. */
+  methodology: string;
+  /** Evidentiary-integrity / chain-of-custody attestation narrative. */
+  chainOfCustody: string;
+  /** Point-in-time reservations. */
+  limitations: string;
+  /** AI-assisted-drafting + not-legal-advice + human-rated disclosure block. */
+  legalDisclaimer: string;
+  /** Per-finding CSP risk characterization, keyed by audit_item_id. */
+  findingNarratives: Record<string, string>;
+  /** Deduped, chunk-verified references across the whole brief. */
+  citations: BriefCitation[];
+  /** Deterministic numbers as they stood at generation — provenance, not a source of truth. */
+  scoreSnapshot?: {
+    overall: { rawScore: number; effectiveMax: number; percent: number | null; tier: string | null };
+    findingCount: number;
+    sifCount: number;
+    highPlusCount: number;
+  };
+}
+
+/**
+ * A legal-grade findings brief (Phase 5+). Audit-level; the AI drafts, a human
+ * accepts. `accepted_at`/`accepted_by` are null until acceptance — and only an
+ * accepted brief syncs, so unreviewed AI text never becomes an org record.
+ */
+export interface ReportBrief {
+  id: string;
+  org_id: string;
+  audit_id: string;
+  content: ReportBriefContent;
+  /** Which Claude model drafted it (provenance). */
+  model: string;
+  library_version_id: string;
+  generated_at: string;
+  generated_by: string;
+  accepted_by: string | null;
+  accepted_at: string | null;
+  ai_generated: boolean;
+  sync_state: 'local' | 'synced';
+  updated_at: string;
 }

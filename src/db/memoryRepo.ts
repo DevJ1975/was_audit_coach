@@ -16,6 +16,7 @@ import type {
   AuditStatus,
   CorrectiveAction,
   DisclosureLogEntry,
+  ReportBrief,
   ScopingAnswer,
 } from './types';
 import type {
@@ -23,6 +24,7 @@ import type {
   RepoDeps,
   CreateAuditInput,
   AuditLibraryContext,
+  NewReportBrief,
 } from './repo';
 import type { Rating } from '@soteria/scoring-engine';
 import { computeApplicableCodes } from '@/domain/applicability';
@@ -38,6 +40,8 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
   const attachments = new Map<string, Attachment>();
   const cas = new Map<string, CorrectiveAction>();
   const disclosures: DisclosureLogEntry[] = [];
+  const reportBriefs = new Map<string, ReportBrief>(); // audit_id → one current brief
+  const pushedBriefIds = new Set<string>();
 
   function appendEvent(
     item: AuditItem,
@@ -151,6 +155,7 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
       for (let i = events.length - 1; i >= 0; i--) if (events[i]!.audit_id === id) events.splice(i, 1);
       for (const [cid, ca] of [...cas]) if (ca.audit_id === id) cas.delete(cid);
       for (let i = disclosures.length - 1; i >= 0; i--) if (disclosures[i]!.audit_id === id) disclosures.splice(i, 1);
+      for (const [bid, b] of [...reportBriefs]) if (b.audit_id === id) reportBriefs.delete(bid);
       scoping.delete(id);
       audits.delete(id);
       return { evidenceUris };
@@ -370,6 +375,53 @@ export function createMemoryRepo(deps: RepoDeps): Repo {
 
     async listDisclosures(audit_id) {
       return disclosures.filter((d) => d.audit_id === audit_id);
+    },
+
+    async getReportBrief(audit_id) {
+      // Keyed by audit_id (row id mirrors it); only accepted briefs are stored.
+      return reportBriefs.get(audit_id) ?? null;
+    },
+
+    async saveReportBrief(input: NewReportBrief, actor_id) {
+      const ts = deps.now();
+      const prev = reportBriefs.get(input.audit_id);
+      const brief: ReportBrief = {
+        id: input.audit_id, // one brief per audit; id mirrors the audit id
+        org_id: input.org_id,
+        audit_id: input.audit_id,
+        content: input.content,
+        model: input.model,
+        library_version_id: input.library_version_id,
+        generated_at: prev?.generated_at ?? ts,
+        generated_by: prev?.generated_by ?? actor_id,
+        accepted_by: actor_id,
+        accepted_at: ts,
+        ai_generated: true,
+        sync_state: 'local',
+        updated_at: ts,
+      };
+      reportBriefs.set(brief.id, brief);
+      pushedBriefIds.delete(brief.id); // re-arm the push cursor
+      disclosures.push({
+        id: deps.newId(), org_id: input.org_id, audit_id: input.audit_id,
+        actor_id, action: 'brief_accepted', created_at: ts,
+      });
+      return brief;
+    },
+
+    async listUnpushedBriefs(audit_id) {
+      // Only accepted briefs are ever stored, so all are eligible.
+      return [...reportBriefs.values()].filter(
+        (b) => b.audit_id === audit_id && !pushedBriefIds.has(b.id),
+      );
+    },
+
+    async markBriefsPushed(ids) {
+      for (const id of ids) pushedBriefIds.add(id);
+    },
+
+    async applyRemoteBriefs(rows) {
+      for (const row of rows) reportBriefs.set(row.id, { ...row });
     },
   };
 }

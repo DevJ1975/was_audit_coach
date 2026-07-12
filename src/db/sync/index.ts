@@ -9,14 +9,20 @@
  * full pull.
  */
 import type { Repo } from '@/db/repo';
-import type { Audit, ScopingAnswer } from '@/db/types';
+import type { Audit, ScopingAnswer, ReportBrief } from '@/db/types';
 import { nowIso } from '@/db/ids';
 import { SyncEngine, type SyncSummary } from './engine';
 import { AttachmentSync, type AttachmentSyncSummary } from './attachments';
 import { createSupabaseRemote } from './supabaseRemote';
 import { createSupabaseEvidence } from './supabaseEvidence';
 import { loadForUpload } from '@/attachments/capture';
-import type { RemoteAdapter, EvidenceRemote, RemoteAudit, RemoteScopingAnswer } from './remote';
+import type {
+  RemoteAdapter,
+  EvidenceRemote,
+  RemoteAudit,
+  RemoteScopingAnswer,
+  RemoteReportBrief,
+} from './remote';
 
 export interface SyncBundle {
   engine: SyncEngine;
@@ -57,6 +63,25 @@ function scopingToRemote(a: ScopingAnswer): RemoteScopingAnswer {
 }
 function scopingToLocal(a: RemoteScopingAnswer): ScopingAnswer {
   return { audit_id: a.audit_id, org_id: a.org_id, question_key: a.question_key, answer: a.answer };
+}
+
+/** ReportBrief ↔ wire. `sync_state` is device-local, so it is not carried over
+ *  the wire; a pulled brief is 'synced' by definition. */
+function briefToRemote(b: ReportBrief): RemoteReportBrief {
+  return {
+    id: b.id, org_id: b.org_id, audit_id: b.audit_id, content: b.content, model: b.model,
+    library_version_id: b.library_version_id, generated_at: b.generated_at,
+    generated_by: b.generated_by, accepted_by: b.accepted_by, accepted_at: b.accepted_at,
+    ai_generated: b.ai_generated, updated_at: b.updated_at,
+  };
+}
+function briefToLocal(r: RemoteReportBrief): ReportBrief {
+  return {
+    id: r.id, org_id: r.org_id, audit_id: r.audit_id, content: r.content, model: r.model,
+    library_version_id: r.library_version_id, generated_at: r.generated_at,
+    generated_by: r.generated_by, accepted_by: r.accepted_by, accepted_at: r.accepted_at,
+    ai_generated: r.ai_generated, sync_state: 'synced', updated_at: r.updated_at,
+  };
 }
 
 export interface FullSyncResult {
@@ -169,6 +194,19 @@ export async function runFullSync(repo: Repo, auditId: string): Promise<FullSync
     await repo.markDisclosuresPushed(rows.map((d) => d.id));
   });
 
+  // Accepted legal briefs — delta only; listUnpushedBriefs returns only accepted
+  // rows, so an unreviewed AI draft never leaves the device. Push ours, then pull
+  // teammates' accepted briefs for this audit (e.g. so a counsel_viewer sees them).
+  await step(false, async () => {
+    const briefs = await repo.listUnpushedBriefs(auditId);
+    if (briefs.length) {
+      await remote.upsertReportBriefs(briefs.map(briefToRemote));
+      await repo.markBriefsPushed(briefs.map((x) => x.id));
+    }
+    const remoteBriefs = await remote.pullReportBriefs(auditId);
+    if (remoteBriefs.length) await repo.applyRemoteBriefs(remoteBriefs.map(briefToLocal));
+  });
+
   return finish();
 }
 
@@ -240,6 +278,8 @@ export async function pullRemoteAudits(repo: Repo): Promise<CloudPullResult> {
       await repo.applyScopingAnswers(h.id, answers.map(scopingToLocal));
       await engine.syncAudit(h.id); // materialize items
       await attachments.syncAttachments(h.id); // evidence metadata
+      const briefs = await remote.pullReportBriefs(h.id); // accepted legal brief, if any
+      if (briefs.length) await repo.applyRemoteBriefs(briefs.map(briefToLocal));
       added++;
     } catch (e) {
       errors.push(errorMessage(e));

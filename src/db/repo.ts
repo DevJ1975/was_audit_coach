@@ -18,6 +18,8 @@ import type {
   CorrectiveAction,
   DisclosureLogEntry,
   LibraryItem,
+  ReportBrief,
+  ReportBriefContent,
   ScopingAnswer,
 } from './types';
 import type { Rating } from '@soteria/scoring-engine';
@@ -47,6 +49,16 @@ export interface AuditLibraryContext {
   /** Federal + selected-state items for this audit's frozen library version. */
   library: LibraryItem[];
   questions: ScopingQuestion[];
+}
+
+/** Input to persist a freshly generated (unaccepted) legal brief. */
+export interface NewReportBrief {
+  audit_id: string;
+  org_id: string;
+  content: ReportBriefContent;
+  /** Which Claude model drafted it. */
+  model: string;
+  library_version_id: string;
 }
 
 export interface Repo {
@@ -176,4 +188,25 @@ export interface Repo {
    *  without a cursor every sync re-sends the whole history forever). */
   listUnpushedDisclosures(audit_id: string): Promise<DisclosureLogEntry[]>;
   markDisclosuresPushed(ids: string[]): Promise<void>;
+
+  // --- Report briefs (document-scale legal-grade AI narrative; audit-level) --
+  //
+  // One brief per audit; the row id mirrors the audit id, so acceptance is an
+  // upsert-in-place and every device converges on the same row. AI generation is
+  // NOT persisted — a human accepts the (edited) draft, and only then does it
+  // become a durable, syncable record (AI drafts; humans accept — NN #2). A
+  // regenerate-then-discard therefore never destroys a previously accepted brief.
+  /** The accepted brief for an audit, or null if none has been accepted. */
+  getReportBrief(audit_id: string): Promise<ReportBrief | null>;
+  /**
+   * A human accepts the (possibly edited) brief: upserts the single per-audit
+   * row with the final content, stamps accepted_by/accepted_at, marks it 'local'
+   * so it pushes, and logs a `brief_accepted` disclosure.
+   */
+  saveReportBrief(input: NewReportBrief, actor_id: string): Promise<ReportBrief>;
+  /** Accepted briefs not yet pushed to the server. */
+  listUnpushedBriefs(audit_id: string): Promise<ReportBrief[]>;
+  markBriefsPushed(ids: string[]): Promise<void>;
+  /** Upsert briefs that arrived from the server (pull, not an edit — no disclosure). */
+  applyRemoteBriefs(rows: ReportBrief[]): Promise<void>;
 }
