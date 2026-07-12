@@ -95,6 +95,17 @@ export const layout = {
   gap: 12,
 } as const;
 
+/** 8pt-based spacing scale. Theme-independent. */
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+
+/** Typographic ramp — size / line-height / weight / tracking. Theme-independent. */
+export const typeRamp = {
+  title: { fontSize: 21, lineHeight: 27, fontWeight: '800', letterSpacing: 0.2 },
+  label: { fontSize: 13, lineHeight: 16, fontWeight: '600', letterSpacing: 0.3 },
+  body: { fontSize: 15, lineHeight: 22, fontWeight: '400' },
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: '500' },
+} as const;
+
 /** Item codes and scores render in tabular monospace. Theme-independent. */
 export const typography = {
   mono: 'Menlo, Consolas, "Roboto Mono", monospace',

@@ -24,7 +24,7 @@ import {
   TouchableRipple,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { layout, typography, type Palette } from '@/theme/tokens';
+import { layout, typography, space, typeRamp, type Palette } from '@/theme/tokens';
 import { useThemedStyles } from '@/theme/ThemeProvider';
 
 export function Screen({
@@ -177,30 +177,30 @@ export function Row({
 const makeStyles = (t: Palette) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.surfaces.bg },
-    scrollContent: { padding: layout.gap, gap: layout.gap },
+    scrollContent: { padding: space.lg, gap: 14 },
     card: {
       backgroundColor: t.surfaces.surface,
-      borderRadius: layout.radius,
+      borderRadius: layout.radiusLg,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.surfaces.line,
-      padding: layout.gap,
-      gap: 8,
+      padding: 14,
+      gap: space.sm + 2,
     },
-    title: { color: t.text.primary, fontSize: 20, fontWeight: '700' },
-    subtitle: { color: t.text.dim, fontSize: 13, fontWeight: '600' },
-    body: { color: t.text.primary, fontSize: 15, lineHeight: 21 },
+    title: { ...typeRamp.title, color: t.text.primary },
+    subtitle: { ...typeRamp.label, color: t.text.dim },
+    body: { ...typeRamp.body, color: t.text.primary },
     mono: { color: t.text.primary, fontFamily: typography.mono, fontSize: 13 },
     button: { borderRadius: layout.radius, justifyContent: 'center' },
     buttonContent: { minHeight: layout.minTapTarget, paddingHorizontal: 10 },
     buttonLabel: { fontSize: 16, fontWeight: '600' },
     rowSurface: {
       backgroundColor: t.surfaces.surface,
-      borderRadius: layout.radius,
+      borderRadius: layout.radiusLg,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.surfaces.line,
       overflow: 'hidden',
     },
-    rowRipple: { borderRadius: layout.radius },
+    rowRipple: { borderRadius: layout.radiusLg },
     rowInner: {
       minHeight: layout.minTapTarget,
       paddingHorizontal: layout.gap,
