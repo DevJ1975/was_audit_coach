@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Stack, Link } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
@@ -11,6 +12,17 @@ import { BrandLogo, AppFooter } from '@/components/branding';
 import { paperThemes } from '@/theme/paperTheme';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { registerServiceWorker } from '@/pwa/registerSw';
+
+/**
+ * Route react-native-paper's icon props (Button `icon`, Chip, etc.) through
+ * @expo/vector-icons so icons render on web + native without a native link step.
+ */
+type PaperIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+const paperSettings = {
+  icon: (props: { name: string; color?: string; size?: number }) => (
+    <MaterialCommunityIcons name={props.name as PaperIconName} color={props.color} size={props.size} />
+  ),
+};
 
 /** Header account link — reflects the session instead of always "Sign in". */
 function AccountLink(): React.ReactElement {
@@ -38,7 +50,7 @@ function ThemedApp(): React.ReactElement {
   }, [palette.surfaces.bg]);
 
   return (
-    <PaperProvider theme={paperThemes[scheme]}>
+    <PaperProvider theme={paperThemes[scheme]} settings={paperSettings}>
       <AuthProvider>
         <RepoProvider>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />

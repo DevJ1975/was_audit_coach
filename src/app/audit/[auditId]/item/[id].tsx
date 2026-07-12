@@ -17,6 +17,7 @@ import { buildObservationPolish, buildRecommendationDraft, buildAriaCoach, type 
 import type { Rating } from '@soteria/scoring-engine';
 import { ratingColors, layout, type Palette } from '@/theme/tokens';
 import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type TextField = 'observations' | 'recommendations' | 'auditor_notes';
 const TEXT_FIELDS: TextField[] = ['observations', 'recommendations', 'auditor_notes'];
@@ -98,7 +99,8 @@ export default function ItemCardScreen(): React.ReactElement {
     const active = dictation.listening && dictationTarget.current === field;
     return (
       <Button
-        label={active ? '■ Stop dictation' : '🎙 Dictate'}
+        label={active ? 'Stop dictation' : 'Dictate'}
+        icon={active ? 'stop' : 'microphone'}
         variant={active ? 'primary' : 'ghost'}
         onPress={() => {
           if (!active && dictation.listening) dictation.toggle(); // stop other field first
@@ -282,7 +284,11 @@ export default function ItemCardScreen(): React.ReactElement {
       <Card>
         <Pressable onPress={() => setRequirementOpen((v) => !v)} style={styles.collapseHead} accessibilityRole="button">
           <Subtitle>Requirement</Subtitle>
-          <Text style={styles.caret}>{requirementOpen ? '▾' : '▸'}</Text>
+          <MaterialCommunityIcons
+            name={requirementOpen ? 'chevron-down' : 'chevron-right'}
+            size={22}
+            color={palette.text.dim}
+          />
         </Pressable>
         {requirementOpen ? (
           <>
@@ -355,7 +361,8 @@ export default function ItemCardScreen(): React.ReactElement {
         />
         <View style={styles.aiRow}>
           <Button
-            label={aiBusy === 'observations' ? 'Polishing…' : '✨ AI polish'}
+            label={aiBusy === 'observations' ? 'Polishing…' : 'AI polish'}
+            icon="auto-fix"
             variant="secondary"
             onPress={polish}
             disabled={!aiOn || aiBusy !== null || !obs.trim()}
@@ -386,7 +393,8 @@ export default function ItemCardScreen(): React.ReactElement {
         />
         <View style={styles.aiRow}>
           <Button
-            label={aiBusy === 'recommendations' ? 'Drafting…' : '✨ AI draft'}
+            label={aiBusy === 'recommendations' ? 'Drafting…' : 'AI draft'}
+            icon="auto-fix"
             variant="secondary"
             onPress={draftRecommendation}
             disabled={!aiOn || aiBusy !== null}
@@ -456,9 +464,10 @@ export default function ItemCardScreen(): React.ReactElement {
 
       {/* Prev / next */}
       <View style={styles.nav}>
-        <Button label="‹ Prev" variant="secondary" onPress={() => go(-1)} disabled={position <= 0} />
+        <Button label="Prev" icon="chevron-left" variant="secondary" onPress={() => go(-1)} disabled={position <= 0} />
         <Button
-          label="Next ›"
+          label="Next"
+          icon="chevron-right"
           variant="secondary"
           onPress={() => go(1)}
           disabled={position < 0 || position >= siblings.length - 1}

@@ -110,6 +110,7 @@ export function Button({
   disabled,
   style,
   accessibilityLabel,
+  icon,
 }: {
   label: string;
   onPress?: () => void;
@@ -117,12 +118,15 @@ export function Button({
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
+  /** MaterialCommunityIcons name, rendered as a leading icon (Paper resolves it). */
+  icon?: string;
 }): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const mode = variant === 'primary' ? 'contained' : variant === 'secondary' ? 'contained-tonal' : 'text';
   return (
     <PaperButton
       mode={mode}
+      icon={icon}
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
       accessibilityLabel={accessibilityLabel ?? label}

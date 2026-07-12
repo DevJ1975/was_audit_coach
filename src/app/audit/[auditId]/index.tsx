@@ -13,6 +13,7 @@ import { useRepo, useSession } from '@/db/RepoProvider';
 import { sectionNames, sectionOrder } from '@/seed';
 import { ratingColors, type Palette } from '@/theme/tokens';
 import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Rating } from '@soteria/scoring-engine';
 
 /** A rating name in its semantic color (or "Unrated"). */
@@ -235,7 +236,7 @@ export default function SectionListScreen(): React.ReactElement {
                 size="sm"
               />
             </View>
-            <Text style={styles.chevron}>›</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={palette.text.faint} />
           </Row>
         );
       })}
