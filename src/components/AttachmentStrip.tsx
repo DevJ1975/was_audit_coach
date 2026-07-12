@@ -25,13 +25,15 @@ import {
   VoiceRecorder,
   type CaptureResult,
 } from '@/attachments/capture';
-import { surfaces, text as textTokens, layout, brand, semantic } from '@/theme/tokens';
+import { layout, type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 // 24pt delete badge + 12pt slop on every edge = a 48pt touch target (NN #10).
 const DELETE_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 };
 
 export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React.ReactElement {
   const { attachments, add, remove, resolveUri } = useAttachments(auditItemId);
+  const styles = useThemedStyles(makeStyles);
   const recorder = useRef(new VoiceRecorder());
   const player = useRef(createAudioPlayer());
   const busyRef = useRef(false); // synchronous guard: blocks double-taps before state settles
@@ -192,28 +194,48 @@ export function AttachmentStrip({ auditItemId }: { auditItemId: string }): React
   );
 }
 
-const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  hint: { color: textTokens.faint, fontSize: 12, marginTop: 2 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
-  thumbWrap: { position: 'relative' },
-  thumb: { width: 76, height: 76, borderRadius: layout.radius, backgroundColor: surfaces.raised },
-  remoteThumb: { alignItems: 'center', justifyContent: 'center', backgroundColor: surfaces.raised, borderWidth: 1, borderColor: surfaces.line },
-  remoteThumbText: { color: textTokens.dim, fontSize: 12, fontWeight: '600' },
-  del: {
-    position: 'absolute', top: -6, right: -6, width: 24, height: 24, borderRadius: 12,
-    backgroundColor: '#8F1D28', alignItems: 'center', justifyContent: 'center',
-  },
-  delX: { color: '#fff', fontSize: 13, fontWeight: '800' },
-  voice: {
-    flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: layout.minTapTarget,
-    backgroundColor: surfaces.raised, borderRadius: layout.radius, paddingHorizontal: 12,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: surfaces.line,
-  },
-  voicePlay: { minHeight: layout.minTapTarget, justifyContent: 'center' },
-  voiceText: { color: brand.default, fontWeight: '700' },
-  voiceDel: { minHeight: layout.minTapTarget, justifyContent: 'center', paddingHorizontal: 8 },
-  delText: { color: semantic.danger, fontWeight: '600' },
-  modal: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
-  full: { width: '92%', height: '80%' },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    hint: { color: t.text.faint, fontSize: 12, marginTop: 2 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
+    thumbWrap: { position: 'relative' },
+    thumb: { width: 76, height: 76, borderRadius: layout.radius, backgroundColor: t.surfaces.raised },
+    remoteThumb: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.surfaces.raised,
+      borderWidth: 1,
+      borderColor: t.surfaces.line,
+    },
+    remoteThumbText: { color: t.text.dim, fontSize: 12, fontWeight: '600' },
+    del: {
+      position: 'absolute',
+      top: -6,
+      right: -6,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: t.semantic.danger,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    delX: { color: '#fff', fontSize: 13, fontWeight: '800' },
+    voice: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      minHeight: layout.minTapTarget,
+      backgroundColor: t.surfaces.raised,
+      borderRadius: layout.radius,
+      paddingHorizontal: 12,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.surfaces.line,
+    },
+    voicePlay: { minHeight: layout.minTapTarget, justifyContent: 'center' },
+    voiceText: { color: t.brand.accent, fontWeight: '700' },
+    voiceDel: { minHeight: layout.minTapTarget, justifyContent: 'center', paddingHorizontal: 8 },
+    delText: { color: t.semantic.danger, fontWeight: '600' },
+    modal: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
+    full: { width: '92%', height: '80%' },
+  });

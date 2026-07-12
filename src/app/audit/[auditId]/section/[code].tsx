@@ -8,11 +8,13 @@ import { RatingDot, SifBadge } from '@/components/badges';
 import { useAuditData } from '@/hooks/useAudit';
 import { compareByCode } from '@/domain/ordering';
 import { sectionNames, libraryItem } from '@/seed';
-import { text as textTokens } from '@/theme/tokens';
+import { type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 export default function ItemListScreen(): React.ReactElement {
   const { auditId, code } = useLocalSearchParams<{ auditId: string; code: string }>();
   const router = useRouter();
+  const styles = useThemedStyles(makeStyles);
   const { items, score } = useAuditData(auditId);
 
   const sectionItems = items
@@ -72,11 +74,12 @@ export default function ItemListScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  body: { flex: 1, gap: 4 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  code: { color: textTokens.primary, fontSize: 14, fontWeight: '700' },
-  rating: { color: textTokens.dim, fontSize: 12, fontWeight: '600', marginLeft: 'auto' },
-  req: { color: textTokens.dim, fontSize: 13, lineHeight: 18 },
-  chevron: { color: textTokens.faint, fontSize: 24, fontWeight: '300' },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    body: { flex: 1, gap: 4 },
+    top: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    code: { color: t.text.primary, fontSize: 14, fontWeight: '700' },
+    rating: { color: t.text.dim, fontSize: 12, fontWeight: '600', marginLeft: 'auto' },
+    req: { color: t.text.dim, fontSize: 13, lineHeight: 18 },
+    chevron: { color: t.text.faint, fontSize: 24, fontWeight: '300' },
+  });

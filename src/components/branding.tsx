@@ -3,16 +3,19 @@
  * Soteria Audit (plan Part 5). The header carries the org logo; the footer
  * carries the platform attribution.
  *
+ * The WLS wordmark colors (red "Workplace" / grey "Learning System") are the
+ * brand mark itself and are intentionally CONSTANT across light/dark. The footer
+ * chrome follows the active theme.
+ *
  * LOGO: the real "Workplace Learning System" mark goes at
- * assets/branding/wls-logo.png. Until it's provided, BrandLogo renders a
- * wordmark fallback in the logo's palette (red "Workplace" / grey "Learning
- * System") so the header is branded immediately. To use the raster, set
- * USE_RASTER_LOGO = true after adding the file.
+ * assets/branding/wls-logo.png. Until it's provided, BrandLogo renders the
+ * wordmark fallback so the header is branded immediately.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { versionLabel } from '@/version';
-import { text as textTokens, surfaces } from '@/theme/tokens';
+import { type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 const WLS_RED = '#E1251B';
 const WLS_GREY = '#6B7280';
@@ -21,11 +24,7 @@ const WLS_GREY = '#6B7280';
  * WLS header logo. Wordmark fallback until the raster mark is added.
  *
  * To use the real logo: add assets/branding/wls-logo.png, then replace the
- * returned View with:
- *   <Image source={require('../../assets/branding/wls-logo.png')}
- *          style={{ height, width: height * 2.2, resizeMode: 'contain' }}
- *          accessibilityLabel="Workplace Learning System" />
- * (Metro resolves require() statically, so only add it once the file exists.)
+ * returned View with an <Image> pointing at it.
  */
 export function BrandLogo({ height = 34 }: { height?: number }): React.ReactElement {
   return (
@@ -37,11 +36,10 @@ export function BrandLogo({ height = 34 }: { height?: number }): React.ReactElem
 }
 
 export function AppFooter(): React.ReactElement {
+  const f = useThemedStyles(makeFooterStyles);
   return (
-    <View style={styles.footer}>
-      <Text style={styles.footerText}>
-        Powered by Trainovate Technologies LLC · {versionLabel()}
-      </Text>
+    <View style={f.footer}>
+      <Text style={f.footerText}>Powered by Trainovate Technologies LLC · {versionLabel()}</Text>
     </View>
   );
 }
@@ -51,12 +49,16 @@ const styles = StyleSheet.create({
   word: { fontWeight: '800', letterSpacing: 0.2 },
   red: { color: WLS_RED },
   grey: { color: WLS_GREY },
-  footer: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: surfaces.line,
-    backgroundColor: surfaces.surface,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  footerText: { color: textTokens.faint, fontSize: 11, letterSpacing: 0.3 },
 });
+
+const makeFooterStyles = (t: Palette) =>
+  StyleSheet.create({
+    footer: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.surfaces.line,
+      backgroundColor: t.surfaces.surface,
+      paddingVertical: 8,
+      alignItems: 'center',
+    },
+    footerText: { color: t.text.faint, fontSize: 11, letterSpacing: 0.3 },
+  });

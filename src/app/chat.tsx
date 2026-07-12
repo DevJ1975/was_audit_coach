@@ -21,7 +21,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Mono } from '@/components/ui';
 import { askSoteria, type ChatTurn, type SoteriaCitation } from '@/ai/chat';
 import { useAiReady, aiHintText } from '@/hooks/useAiReady';
-import { brand, layout, surfaces, text as textTokens, semantic } from '@/theme/tokens';
+import { layout, type Palette } from '@/theme/tokens';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
 
 interface Message extends ChatTurn {
   citations?: SoteriaCitation[];
@@ -34,6 +35,7 @@ const SUGGESTIONS = [
 ];
 
 function CitationCard({ c }: { c: SoteriaCitation }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       onPress={() => void Linking.openURL(c.source_url)}
@@ -60,6 +62,8 @@ export default function ChatScreen(): React.ReactElement {
   const { seed, jurisdiction } = useLocalSearchParams<{ seed?: string; jurisdiction?: string }>();
   const aiGate = useAiReady();
   const aiOn = aiGate.ready;
+  const styles = useThemedStyles(makeStyles);
+  const { palette } = useTheme();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(seed ?? '');
@@ -158,7 +162,7 @@ export default function ChatScreen(): React.ReactElement {
 
           {busy ? (
             <View style={[styles.bubble, styles.assistantBubble, styles.busyRow]}>
-              <ActivityIndicator animating size="small" color={brand.default} />
+              <ActivityIndicator animating size="small" color={palette.brand.accent} />
               <Text style={styles.busyText}>Searching the regulations…</Text>
             </View>
           ) : null}
@@ -197,84 +201,85 @@ export default function ChatScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: surfaces.bg },
-  flex: { flex: 1 },
-  thread: { padding: layout.gap, gap: layout.gap },
-  empty: { gap: 10, paddingVertical: 12 },
-  emptyTitle: { color: textTokens.primary, fontSize: 18, fontWeight: '700' },
-  emptyBody: { color: textTokens.dim, fontSize: 14, lineHeight: 20 },
-  suggestion: {
-    minHeight: layout.minTapTarget,
-    justifyContent: 'center',
-    backgroundColor: surfaces.surface,
-    borderRadius: layout.radius,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: surfaces.line,
-    paddingHorizontal: layout.gap,
-    paddingVertical: 10,
-  },
-  suggestionText: { color: brand.default, fontSize: 14, fontWeight: '600' },
-  bubble: {
-    borderRadius: layout.radius,
-    padding: layout.gap,
-    gap: 8,
-    maxWidth: '92%',
-  },
-  userBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: surfaces.raised,
-    borderWidth: 1,
-    borderColor: brand.default,
-  },
-  assistantBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: surfaces.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: surfaces.line,
-  },
-  bubbleText: { color: textTokens.primary, fontSize: 15, lineHeight: 22 },
-  citations: { gap: 6 },
-  citation: {
-    flexDirection: 'row',
-    gap: 8,
-    minHeight: layout.minTapTarget,
-    alignItems: 'center',
-    backgroundColor: surfaces.raised,
-    borderRadius: layout.radius,
-    borderLeftWidth: 3,
-    borderLeftColor: brand.default,
-    padding: 8,
-  },
-  citationRef: { color: brand.default, fontSize: 13, fontWeight: '700' },
-  citationBody: { flex: 1, gap: 2 },
-  citationCode: { color: textTokens.primary, fontSize: 13, fontWeight: '700' },
-  citationPath: { color: textTokens.dim, fontSize: 11 },
-  citationMeta: { color: textTokens.faint, fontSize: 11 },
-  busyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  busyText: { color: textTokens.dim, fontSize: 13 },
-  error: { color: semantic.warn, fontSize: 13, paddingHorizontal: 4 },
-  // paddingVertical 17 + 14pt line ≈ 48pt target in the header (NN #10).
-  newChat: { color: brand.default, fontWeight: '600', paddingHorizontal: 16, paddingVertical: 17, fontSize: 14 },
-  offline: {
-    color: textTokens.dim,
-    fontSize: 12,
-    paddingHorizontal: layout.gap,
-    paddingTop: 6,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-    paddingHorizontal: layout.gap,
-    paddingTop: 6,
-  },
-  input: { flex: 1, maxHeight: 120, backgroundColor: surfaces.raised, fontSize: 15 },
-  disclaimer: {
-    color: textTokens.faint,
-    fontSize: 11,
-    textAlign: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: layout.gap,
-  },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.surfaces.bg },
+    flex: { flex: 1 },
+    thread: { padding: layout.gap, gap: layout.gap },
+    empty: { gap: 10, paddingVertical: 12 },
+    emptyTitle: { color: t.text.primary, fontSize: 18, fontWeight: '700' },
+    emptyBody: { color: t.text.dim, fontSize: 14, lineHeight: 20 },
+    suggestion: {
+      minHeight: layout.minTapTarget,
+      justifyContent: 'center',
+      backgroundColor: t.surfaces.surface,
+      borderRadius: layout.radius,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.surfaces.line,
+      paddingHorizontal: layout.gap,
+      paddingVertical: 10,
+    },
+    suggestionText: { color: t.brand.accent, fontSize: 14, fontWeight: '600' },
+    bubble: {
+      borderRadius: layout.radius,
+      padding: layout.gap,
+      gap: 8,
+      maxWidth: '92%',
+    },
+    userBubble: {
+      alignSelf: 'flex-end',
+      backgroundColor: t.surfaces.raised,
+      borderWidth: 1,
+      borderColor: t.brand.accent,
+    },
+    assistantBubble: {
+      alignSelf: 'flex-start',
+      backgroundColor: t.surfaces.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.surfaces.line,
+    },
+    bubbleText: { color: t.text.primary, fontSize: 15, lineHeight: 22 },
+    citations: { gap: 6 },
+    citation: {
+      flexDirection: 'row',
+      gap: 8,
+      minHeight: layout.minTapTarget,
+      alignItems: 'center',
+      backgroundColor: t.surfaces.raised,
+      borderRadius: layout.radius,
+      borderLeftWidth: 3,
+      borderLeftColor: t.brand.accent,
+      padding: 8,
+    },
+    citationRef: { color: t.brand.accent, fontSize: 13, fontWeight: '700' },
+    citationBody: { flex: 1, gap: 2 },
+    citationCode: { color: t.text.primary, fontSize: 13, fontWeight: '700' },
+    citationPath: { color: t.text.dim, fontSize: 11 },
+    citationMeta: { color: t.text.faint, fontSize: 11 },
+    busyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    busyText: { color: t.text.dim, fontSize: 13 },
+    error: { color: t.semantic.warn, fontSize: 13, paddingHorizontal: 4 },
+    // paddingVertical 17 + 14pt line ≈ 48pt target in the header (NN #10).
+    newChat: { color: t.brand.accent, fontWeight: '600', paddingHorizontal: 16, paddingVertical: 17, fontSize: 14 },
+    offline: {
+      color: t.text.dim,
+      fontSize: 12,
+      paddingHorizontal: layout.gap,
+      paddingTop: 6,
+    },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 8,
+      paddingHorizontal: layout.gap,
+      paddingTop: 6,
+    },
+    input: { flex: 1, maxHeight: 120, backgroundColor: t.surfaces.raised, fontSize: 15 },
+    disclaimer: {
+      color: t.text.faint,
+      fontSize: 11,
+      textAlign: 'center',
+      paddingVertical: 6,
+      paddingHorizontal: layout.gap,
+    },
+  });

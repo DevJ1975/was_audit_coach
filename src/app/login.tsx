@@ -4,12 +4,15 @@ import { useRouter, Stack } from 'expo-router';
 import { Banner, HelperText, TextInput, Text } from 'react-native-paper';
 import { Screen, Card, Button, Title, Subtitle } from '@/components/ui';
 import { BrandLogo } from '@/components/branding';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/auth/AuthProvider';
-import { text as textTokens, semantic } from '@/theme/tokens';
+import { type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 export default function LoginScreen(): React.ReactElement {
   const router = useRouter();
   const { signIn, signUp, signOut, backendConfigured, mode, session, identity, claimsOk } = useAuth();
+  const styles = useThemedStyles(makeStyles);
   const [screenMode, setScreenMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,6 +91,10 @@ export default function LoginScreen(): React.ReactElement {
             disabled={busy}
           />
         </Card>
+        <Card>
+          <Subtitle>Appearance</Subtitle>
+          <ThemeToggle />
+        </Card>
         <Button label="Back" variant="ghost" onPress={() => router.back()} />
       </Screen>
     );
@@ -163,19 +170,25 @@ export default function LoginScreen(): React.ReactElement {
         />
       </Card>
 
+      <Card>
+        <Subtitle>Appearance</Subtitle>
+        <ThemeToggle />
+      </Card>
+
       <Button label="Continue offline (field mode)" variant="ghost" onPress={() => router.back()} />
       <Text style={styles.mode}>Current mode: {mode}</Text>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  logoWrap: { alignItems: 'center', paddingVertical: 8 },
-  notice: { borderRadius: 8 },
-  input: { backgroundColor: 'transparent' },
-  mode: { color: textTokens.faint, fontSize: 12, textAlign: 'center' },
-  who: { color: textTokens.primary, fontSize: 16, fontWeight: '600' },
-  meta: { color: textTokens.dim, fontSize: 13 },
-  claimWarn: { color: semantic.warn, fontSize: 13, lineHeight: 18 },
-  notice2: { color: semantic.success, fontSize: 13, lineHeight: 18 },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    logoWrap: { alignItems: 'center', paddingVertical: 8 },
+    notice: { borderRadius: 8 },
+    input: { backgroundColor: 'transparent' },
+    mode: { color: t.text.faint, fontSize: 12, textAlign: 'center' },
+    who: { color: t.text.primary, fontSize: 16, fontWeight: '600' },
+    meta: { color: t.text.dim, fontSize: 13 },
+    claimWarn: { color: t.semantic.warn, fontSize: 13, lineHeight: 18 },
+    notice2: { color: t.semantic.success, fontSize: 13, lineHeight: 18 },
+  });

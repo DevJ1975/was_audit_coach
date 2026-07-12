@@ -33,7 +33,8 @@ import { useAiReady } from '@/hooks/useAiReady';
 import { useAuditData } from '@/hooks/useAudit';
 import { libraryItem, sectionNames } from '@/seed';
 import type { Audit } from '@/db/types';
-import { brand, layout, surfaces, text as textTokens, semantic } from '@/theme/tokens';
+import { layout, type Palette } from '@/theme/tokens';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
 
 const SUGGESTIONS = [
   'What should I look for when auditing a lockout/tagout program?',
@@ -65,6 +66,8 @@ export default function AuditCoachScreen(): React.ReactElement {
   const { audit } = useAuditData(auditId);
   const aiGate = useAiReady();
   const aiOn = aiGate.ready;
+  const styles = useThemedStyles(makeStyles);
+  const { palette } = useTheme();
 
   const stored = getCoachThread(auditId);
   const [messages, setMessages] = useState<CoachTurn[]>(stored.messages);
@@ -168,7 +171,7 @@ export default function AuditCoachScreen(): React.ReactElement {
 
           {busy ? (
             <View style={[styles.bubble, styles.coachBubble, styles.busyRow]}>
-              <ActivityIndicator animating size="small" color={brand.default} />
+              <ActivityIndicator animating size="small" color={palette.brand.accent} />
               <Text style={styles.busyText}>Coaching…</Text>
             </View>
           ) : null}
@@ -207,67 +210,68 @@ export default function AuditCoachScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: surfaces.bg },
-  flex: { flex: 1 },
-  thread: { padding: layout.gap, gap: layout.gap },
-  empty: { gap: 10, paddingVertical: 12 },
-  emptyTitle: { color: textTokens.primary, fontSize: 18, fontWeight: '700' },
-  emptyBody: { color: textTokens.dim, fontSize: 14, lineHeight: 20 },
-  suggestion: {
-    minHeight: layout.minTapTarget,
-    justifyContent: 'center',
-    backgroundColor: surfaces.surface,
-    borderRadius: layout.radius,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: surfaces.line,
-    paddingHorizontal: layout.gap,
-    paddingVertical: 10,
-  },
-  suggestionText: { color: brand.default, fontSize: 14, fontWeight: '600' },
-  threadHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  threadHint: { flex: 1, color: textTokens.faint, fontSize: 12 },
-  bubble: {
-    borderRadius: layout.radius,
-    padding: layout.gap,
-    gap: 8,
-    maxWidth: '92%',
-  },
-  userBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: surfaces.raised,
-    borderWidth: 1,
-    borderColor: brand.default,
-  },
-  coachBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: surfaces.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: surfaces.line,
-  },
-  bubbleText: { color: textTokens.primary, fontSize: 15, lineHeight: 22 },
-  busyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  busyText: { color: textTokens.dim, fontSize: 13 },
-  error: { color: semantic.warn, fontSize: 13, paddingHorizontal: 4 },
-  offline: {
-    color: textTokens.dim,
-    fontSize: 12,
-    paddingHorizontal: layout.gap,
-    paddingTop: 6,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-    paddingHorizontal: layout.gap,
-    paddingTop: 6,
-  },
-  input: { flex: 1, maxHeight: 120, backgroundColor: surfaces.raised, fontSize: 15 },
-  disclaimer: {
-    color: textTokens.faint,
-    fontSize: 11,
-    textAlign: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: layout.gap,
-  },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.surfaces.bg },
+    flex: { flex: 1 },
+    thread: { padding: layout.gap, gap: layout.gap },
+    empty: { gap: 10, paddingVertical: 12 },
+    emptyTitle: { color: t.text.primary, fontSize: 18, fontWeight: '700' },
+    emptyBody: { color: t.text.dim, fontSize: 14, lineHeight: 20 },
+    suggestion: {
+      minHeight: layout.minTapTarget,
+      justifyContent: 'center',
+      backgroundColor: t.surfaces.surface,
+      borderRadius: layout.radius,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.surfaces.line,
+      paddingHorizontal: layout.gap,
+      paddingVertical: 10,
+    },
+    suggestionText: { color: t.brand.accent, fontSize: 14, fontWeight: '600' },
+    threadHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    threadHint: { flex: 1, color: t.text.faint, fontSize: 12 },
+    bubble: {
+      borderRadius: layout.radius,
+      padding: layout.gap,
+      gap: 8,
+      maxWidth: '92%',
+    },
+    userBubble: {
+      alignSelf: 'flex-end',
+      backgroundColor: t.surfaces.raised,
+      borderWidth: 1,
+      borderColor: t.brand.accent,
+    },
+    coachBubble: {
+      alignSelf: 'flex-start',
+      backgroundColor: t.surfaces.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.surfaces.line,
+    },
+    bubbleText: { color: t.text.primary, fontSize: 15, lineHeight: 22 },
+    busyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    busyText: { color: t.text.dim, fontSize: 13 },
+    error: { color: t.semantic.warn, fontSize: 13, paddingHorizontal: 4 },
+    offline: {
+      color: t.text.dim,
+      fontSize: 12,
+      paddingHorizontal: layout.gap,
+      paddingTop: 6,
+    },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 8,
+      paddingHorizontal: layout.gap,
+      paddingTop: 6,
+    },
+    input: { flex: 1, maxHeight: 120, backgroundColor: t.surfaces.raised, fontSize: 15 },
+    disclaimer: {
+      color: t.text.faint,
+      fontSize: 11,
+      textAlign: 'center',
+      paddingVertical: 6,
+      paddingHorizontal: layout.gap,
+    },
+  });

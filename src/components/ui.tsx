@@ -1,10 +1,12 @@
 /**
- * Shared UI primitives — dark-first, 48pt tap targets (Non-Negotiable #10).
+ * Shared UI primitives — dark/light aware, 48pt tap targets (Non-Negotiable #10).
  * Kept dependency-light so every screen composes from the same vocabulary.
  *
- * These now compose React Native Paper (Material 3) chrome — Surface/Button/
- * TouchableRipple/Text — themed via `paperTheme`. Semantic rating & tier colors
- * are NEVER sourced from Paper's palette; they stay in src/theme/tokens.ts (#7).
+ * These compose React Native Paper (Material 3) chrome — Surface/Button/
+ * TouchableRipple/Text — themed via the active palette. Styles are built with
+ * useThemedStyles(makeStyles) so they recompute only when the palette changes.
+ * Semantic rating & tier colors are NEVER sourced from Paper's palette; they stay
+ * in src/theme/tokens.ts (#7).
  */
 import React from 'react';
 import {
@@ -22,7 +24,8 @@ import {
   TouchableRipple,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { surfaces, text as textTokens, layout, typography } from '@/theme/tokens';
+import { layout, typography, type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 export function Screen({
   children,
@@ -33,6 +36,7 @@ export function Screen({
   scroll?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       {scroll ? (
@@ -59,6 +63,7 @@ export function Card({
   /** Left accent border color (e.g. rating color, or evidence-protocol accent). */
   accent?: string;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Surface
       elevation={1}
@@ -70,6 +75,7 @@ export function Card({
 }
 
 export function Title({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <PaperText variant="titleLarge" style={[styles.title, style]}>
       {children}
@@ -77,6 +83,7 @@ export function Title({ children, style }: { children: React.ReactNode; style?: 
   );
 }
 export function Subtitle({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <PaperText variant="labelLarge" style={[styles.subtitle, style]}>
       {children}
@@ -84,6 +91,7 @@ export function Subtitle({ children, style }: { children: React.ReactNode; style
   );
 }
 export function Body({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <PaperText variant="bodyMedium" style={[styles.body, style]}>
       {children}
@@ -91,6 +99,7 @@ export function Body({ children, style }: { children: React.ReactNode; style?: S
   );
 }
 export function Mono({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  const styles = useThemedStyles(makeStyles);
   return <PaperText style={[styles.mono, style]}>{children}</PaperText>;
 }
 
@@ -109,6 +118,7 @@ export function Button({
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const mode = variant === 'primary' ? 'contained' : variant === 'secondary' ? 'contained-tonal' : 'text';
   return (
     <PaperButton
@@ -140,6 +150,7 @@ export function Row({
   /** Stable id for e2e selectors (Maestro `id:`). */
   testID?: string;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Surface
       elevation={1}
@@ -159,38 +170,39 @@ export function Row({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: surfaces.bg },
-  scrollContent: { padding: layout.gap, gap: layout.gap },
-  card: {
-    backgroundColor: surfaces.surface,
-    borderRadius: layout.radius,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: surfaces.line,
-    padding: layout.gap,
-    gap: 8,
-  },
-  title: { color: textTokens.primary, fontSize: 20, fontWeight: '700' },
-  subtitle: { color: textTokens.dim, fontSize: 13, fontWeight: '600' },
-  body: { color: textTokens.primary, fontSize: 15, lineHeight: 21 },
-  mono: { color: textTokens.primary, fontFamily: typography.mono, fontSize: 13 },
-  button: { borderRadius: layout.radius, justifyContent: 'center' },
-  buttonContent: { minHeight: layout.minTapTarget, paddingHorizontal: 10 },
-  buttonLabel: { fontSize: 16, fontWeight: '600' },
-  rowSurface: {
-    backgroundColor: surfaces.surface,
-    borderRadius: layout.radius,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: surfaces.line,
-    overflow: 'hidden',
-  },
-  rowRipple: { borderRadius: layout.radius },
-  rowInner: {
-    minHeight: layout.minTapTarget,
-    paddingHorizontal: layout.gap,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.surfaces.bg },
+    scrollContent: { padding: layout.gap, gap: layout.gap },
+    card: {
+      backgroundColor: t.surfaces.surface,
+      borderRadius: layout.radius,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.surfaces.line,
+      padding: layout.gap,
+      gap: 8,
+    },
+    title: { color: t.text.primary, fontSize: 20, fontWeight: '700' },
+    subtitle: { color: t.text.dim, fontSize: 13, fontWeight: '600' },
+    body: { color: t.text.primary, fontSize: 15, lineHeight: 21 },
+    mono: { color: t.text.primary, fontFamily: typography.mono, fontSize: 13 },
+    button: { borderRadius: layout.radius, justifyContent: 'center' },
+    buttonContent: { minHeight: layout.minTapTarget, paddingHorizontal: 10 },
+    buttonLabel: { fontSize: 16, fontWeight: '600' },
+    rowSurface: {
+      backgroundColor: t.surfaces.surface,
+      borderRadius: layout.radius,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.surfaces.line,
+      overflow: 'hidden',
+    },
+    rowRipple: { borderRadius: layout.radius },
+    rowInner: {
+      minHeight: layout.minTapTarget,
+      paddingHorizontal: layout.gap,
+      paddingVertical: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+  });

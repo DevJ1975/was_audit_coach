@@ -17,12 +17,14 @@ import { Screen, Card, Subtitle, Body } from '@/components/ui';
 import { useRepo, useSession } from '@/db/RepoProvider';
 import { seedLibrary, seedQuestions } from '@/seed';
 import type { ScopingAnswer } from '@/db/types';
-import { surfaces, text as textTokens, brand, layout } from '@/theme/tokens';
+import { layout, type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 export default function ScopingScreen(): React.ReactElement {
   const { auditId } = useLocalSearchParams<{ auditId: string }>();
   const repo = useRepo();
   const session = useSession();
+  const styles = useThemedStyles(makeStyles);
   const [answers, setAnswers] = useState<Map<string, boolean>>(new Map());
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -92,25 +94,26 @@ export default function ScopingScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  question: { color: textTokens.primary, fontSize: 14, lineHeight: 20 },
-  answerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' },
-  answer: {
-    color: textTokens.dim,
-    backgroundColor: surfaces.raised,
-    borderRadius: layout.radius,
-    borderWidth: 1,
-    borderColor: surfaces.line,
-    paddingHorizontal: 22,
-    paddingVertical: 13, // ≥48pt total height with the 14pt line (NN #10)
-    fontSize: 15,
-    fontWeight: '700',
-    overflow: 'hidden',
-    minHeight: layout.minTapTarget,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-  },
-  answerOn: { color: '#0E141B', backgroundColor: brand.default, borderColor: brand.default },
-  answerBusy: { opacity: 0.5 },
-  unanswered: { color: textTokens.faint, fontSize: 12 },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    question: { color: t.text.primary, fontSize: 14, lineHeight: 20 },
+    answerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' },
+    answer: {
+      color: t.text.dim,
+      backgroundColor: t.surfaces.raised,
+      borderRadius: layout.radius,
+      borderWidth: 1,
+      borderColor: t.surfaces.line,
+      paddingHorizontal: 22,
+      paddingVertical: 13, // ≥48pt total height with the 14pt line (NN #10)
+      fontSize: 15,
+      fontWeight: '700',
+      overflow: 'hidden',
+      minHeight: layout.minTapTarget,
+      textAlign: 'center',
+      textAlignVertical: 'center',
+    },
+    answerOn: { color: t.brand.onAccent, backgroundColor: t.brand.accent, borderColor: t.brand.accent },
+    answerBusy: { opacity: 0.5 },
+    unanswered: { color: t.text.faint, fontSize: 12 },
+  });

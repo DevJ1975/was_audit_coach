@@ -8,11 +8,13 @@ import { PrivilegeBanner } from '@/components/badges';
 import { useAuditData } from '@/hooks/useAudit';
 import { sectionNames, sectionOrder } from '@/seed';
 import { RATINGS } from '@soteria/scoring-engine';
-import { ratingColors, surfaces, text as textTokens } from '@/theme/tokens';
+import { ratingColors, type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 export default function DashboardScreen(): React.ReactElement {
   const { auditId } = useLocalSearchParams<{ auditId: string }>();
   const router = useRouter();
+  const styles = useThemedStyles(makeStyles);
   const { audit, items, score, findings } = useAuditData(auditId);
 
   const ratingCounts = Object.fromEntries(RATINGS.map((r) => [r, 0])) as Record<string, number>;
@@ -73,17 +75,18 @@ export default function DashboardScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: surfaces.raised, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  pillText: { color: textTokens.dim, fontSize: 12 },
-  pillNum: { color: textTokens.primary, fontWeight: '800' },
-  kpi: { color: textTokens.dim, fontSize: 13, marginTop: 6 },
-  kpiNum: { color: textTokens.primary, fontWeight: '800' },
-  heading: { fontSize: 16, marginTop: 4 },
-  rowBody: { flex: 1, gap: 6 },
-  rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  code: { color: textTokens.dim, fontSize: 13, fontWeight: '700' },
-  name: { color: textTokens.primary, fontSize: 15, fontWeight: '600', flexShrink: 1 },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaces.raised, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+    dot: { width: 8, height: 8, borderRadius: 4 },
+    pillText: { color: t.text.dim, fontSize: 12 },
+    pillNum: { color: t.text.primary, fontWeight: '800' },
+    kpi: { color: t.text.dim, fontSize: 13, marginTop: 6 },
+    kpiNum: { color: t.text.primary, fontWeight: '800' },
+    heading: { fontSize: 16, marginTop: 4 },
+    rowBody: { flex: 1, gap: 6 },
+    rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    code: { color: t.text.dim, fontSize: 13, fontWeight: '700' },
+    name: { color: t.text.primary, fontSize: 15, fontWeight: '600', flexShrink: 1 },
+  });

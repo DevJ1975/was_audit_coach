@@ -12,7 +12,8 @@ import { Screen, Card, Button, Subtitle, Body, Mono } from '@/components/ui';
 import { useAuth } from '@/auth/AuthProvider';
 import { useOrgAdmin } from '@/hooks/useOrgAdmin';
 import type { Role } from '@/db/types';
-import { surfaces, text as textTokens, brand, semantic, layout } from '@/theme/tokens';
+import { layout, type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 const INVITE_ROLES: Role[] = ['auditor', 'lead_auditor', 'site_manager', 'counsel_viewer', 'admin'];
 const ROLE_LABEL: Record<Role, string> = {
@@ -32,6 +33,7 @@ function RoleChips({
   onChange: (r: Role) => void;
   disabled?: boolean;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.chips}>
       {INVITE_ROLES.map((r) => (
@@ -53,6 +55,7 @@ function RoleChips({
 export default function AdminScreen(): React.ReactElement {
   const { identity, session } = useAuth();
   const admin = useOrgAdmin();
+  const styles = useThemedStyles(makeStyles);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<Role>('auditor');
@@ -196,29 +199,30 @@ export default function AdminScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  input: { backgroundColor: 'transparent' },
-  orgId: { color: textTokens.faint, fontSize: 11, marginTop: 4 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 8 },
-  chip: {
-    color: textTokens.dim,
-    backgroundColor: surfaces.raised,
-    borderRadius: layout.radius,
-    borderWidth: 1,
-    borderColor: surfaces.line,
-    paddingHorizontal: 14,
-    paddingVertical: 14, // ≥48pt with the label line (NN #10)
-    fontSize: 13,
-    fontWeight: '700',
-    overflow: 'hidden',
-  },
-  chipOn: { color: '#0E141B', backgroundColor: brand.default, borderColor: brand.default },
-  chipDisabled: { opacity: 0.5 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rowBody: { flex: 1, gap: 2, paddingVertical: 6 },
-  memberRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: surfaces.line, paddingTop: 4, marginTop: 4 },
-  email: { color: textTokens.primary, fontSize: 14, fontWeight: '600' },
-  meta: { color: textTokens.dim, fontSize: 12 },
-  note: { color: textTokens.faint, fontSize: 11, marginTop: 8 },
-  error: { color: semantic.warn, fontSize: 13 },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    input: { backgroundColor: 'transparent' },
+    orgId: { color: t.text.faint, fontSize: 11, marginTop: 4 },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 8 },
+    chip: {
+      color: t.text.dim,
+      backgroundColor: t.surfaces.raised,
+      borderRadius: layout.radius,
+      borderWidth: 1,
+      borderColor: t.surfaces.line,
+      paddingHorizontal: 14,
+      paddingVertical: 14, // ≥48pt with the label line (NN #10)
+      fontSize: 13,
+      fontWeight: '700',
+      overflow: 'hidden',
+    },
+    chipOn: { color: t.brand.onAccent, backgroundColor: t.brand.accent, borderColor: t.brand.accent },
+    chipDisabled: { opacity: 0.5 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    rowBody: { flex: 1, gap: 2, paddingVertical: 6 },
+    memberRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.surfaces.line, paddingTop: 4, marginTop: 4 },
+    email: { color: t.text.primary, fontSize: 14, fontWeight: '600' },
+    meta: { color: t.text.dim, fontSize: 12 },
+    note: { color: t.text.faint, fontSize: 11, marginTop: 8 },
+    error: { color: t.semantic.warn, fontSize: 13 },
+  });

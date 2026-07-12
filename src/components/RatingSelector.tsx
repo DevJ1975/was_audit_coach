@@ -2,11 +2,15 @@
  * RatingSelector — the 7 OSHA ratings as ≥48pt buttons in the constant signal
  * palette (Non-Negotiable #7, #10). AUDITOR-ONLY: this is the sole surface that
  * sets `rating`. No AI path reaches it (Non-Negotiable #2).
+ *
+ * The chip fill/border are the CONSTANT rating color; the selected label uses the
+ * per-rating `ratingOn` contrast color so "High" / "Very High" stay legible.
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { RATINGS, type Rating } from '@soteria/scoring-engine';
-import { ratingColors, surfaces, text as textTokens, layout } from '@/theme/tokens';
+import { ratingColors, ratingOn, layout, type Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 
 export function RatingSelector({
   value,
@@ -17,6 +21,7 @@ export function RatingSelector({
   onChange: (rating: Rating) => void;
   disabled?: boolean;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.grid} accessibilityRole="radiogroup">
       {RATINGS.map((rating) => {
@@ -37,7 +42,10 @@ export function RatingSelector({
               disabled && styles.disabled,
             ]}
           >
-            <Text style={[styles.label, selected ? styles.labelSelected : { color }]} numberOfLines={2}>
+            <Text
+              style={[styles.label, { color: selected ? ratingOn[rating] : color }]}
+              numberOfLines={2}
+            >
               {rating}
             </Text>
           </Pressable>
@@ -47,22 +55,22 @@ export function RatingSelector({
   );
 }
 
-const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    minHeight: layout.minTapTarget,
-    minWidth: 96,
-    flexGrow: 1,
-    flexBasis: '30%',
-    borderWidth: 2,
-    borderRadius: layout.radius,
-    backgroundColor: surfaces.raised,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  disabled: { opacity: 0.5 },
-  label: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  labelSelected: { color: '#06121E' },
-});
+const makeStyles = (t: Palette) =>
+  StyleSheet.create({
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+      minHeight: layout.minTapTarget,
+      minWidth: 96,
+      flexGrow: 1,
+      flexBasis: '30%',
+      borderWidth: 2,
+      borderRadius: layout.radius,
+      backgroundColor: t.surfaces.raised,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+    },
+    disabled: { opacity: 0.5 },
+    label: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  });
