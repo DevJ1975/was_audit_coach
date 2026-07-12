@@ -1,23 +1,30 @@
 /**
- * React Native Paper (Material 3) themes mapped onto the Soteria palettes — one
- * per scheme. Rating & tier colors are NOT sourced from here; they stay semantic
- * and constant via src/theme/tokens.ts (Non-Negotiable #7). This only themes
- * Paper's chrome (surfaces, primary, text) to match the active palette.
+ * React Native Paper (Material 3) themes mapped onto the official WLS palettes —
+ * one per scheme. Mirrors the kit's toPaperTheme() adapter. Rating & tier colors
+ * are NOT sourced here; they stay semantic & constant via tokens.ts (NN #7).
+ *
+ * All Paper chrome uses Source Sans 3 via configureFonts (fonts loaded in
+ * _layout.tsx). The app's own primitives (Title/Body/Mono) set weighted families
+ * directly through the type ramp.
  */
-import { MD3DarkTheme, MD3LightTheme, type MD3Theme } from 'react-native-paper';
-import { palettes, type ColorScheme, type Palette } from './tokens';
+import { MD3DarkTheme, MD3LightTheme, configureFonts, type MD3Theme } from 'react-native-paper';
+import { palettes, layout, type ColorScheme, type Palette } from './tokens';
+
+const fonts = configureFonts({ config: { fontFamily: 'SourceSans3-Regular' } });
 
 function build(base: MD3Theme, p: Palette): MD3Theme {
   return {
     ...base,
-    roundness: 3,
+    roundness: layout.radius,
+    fonts,
     colors: {
       ...base.colors,
       primary: p.brand.accent,
       onPrimary: p.brand.onAccent,
+      primaryContainer: p.brand.soft,
+      onPrimaryContainer: p.brand.accent,
       secondary: p.brand.accent,
-      // `contained-tonal` (our secondary Button) draws these — match the raised
-      // surface token so it reads as secondary chrome, not MD3's default tint.
+      // `contained-tonal` (our secondary Button) draws these — the raised surface.
       secondaryContainer: p.surfaces.raised,
       onSecondaryContainer: p.text.primary,
       background: p.surfaces.bg,
@@ -27,8 +34,10 @@ function build(base: MD3Theme, p: Palette): MD3Theme {
         ...base.colors.elevation,
         level0: p.surfaces.bg,
         level1: p.surfaces.surface,
-        level2: p.surfaces.raised,
+        level2: p.surfaces.surface,
         level3: p.surfaces.raised,
+        level4: p.surfaces.raised,
+        level5: p.surfaces.raised,
       },
       onSurface: p.text.primary,
       onSurfaceVariant: p.text.dim,
@@ -45,6 +54,6 @@ export const paperThemes: Record<ColorScheme, MD3Theme> = {
   light: build(MD3LightTheme, palettes.light),
 };
 
-/** Back-compat default (dark) for any importer of the old single theme. */
+/** Back-compat default (dark). */
 export const paperTheme = paperThemes.dark;
 export type PaperTheme = MD3Theme;

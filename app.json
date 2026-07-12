@@ -5,12 +5,12 @@
     "version": "0.2.0",
     "scheme": "soteria",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "backgroundColor": "#0E141B",
+    "backgroundColor": "#131417",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#0E141B",
+      "backgroundColor": "#131417",
       "image": "./public/icons/icon-512.png"
     },
     "ios": {
@@ -20,7 +20,7 @@
     "android": {
       "package": "com.trainovate.wlsauditcoach",
       "adaptiveIcon": {
-        "backgroundColor": "#0E141B",
+        "backgroundColor": "#131417",
         "foregroundImage": "./public/icons/icon-1024.png"
       }
     },
@@ -30,8 +30,8 @@
       "name": "WLS Audit Coach",
       "shortName": "Audit Coach",
       "description": "Offline-first EHS audit platform",
-      "themeColor": "#0E141B",
-      "backgroundColor": "#0E141B",
+      "themeColor": "#1E2023",
+      "backgroundColor": "#131417",
       "display": "standalone",
       "orientation": "portrait",
       "lang": "en",
@@ -53,7 +53,8 @@
         {
           "microphonePermission": "Record voice notes as audit evidence."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": false

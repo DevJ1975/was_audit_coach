@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 400" width="780" height="400">
+<defs>
+  <linearGradient id="LRed" gradientUnits="userSpaceOnUse" x1="256" y1="256" x2="52" y2="96">
+    <stop offset="0" stop-color="#E84A55"></stop><stop offset="0.45" stop-color="#CE1F30"></stop><stop offset="1" stop-color="#8E0E1A"></stop>
+  </linearGradient>
+  <linearGradient id="LBlk" gradientUnits="userSpaceOnUse" x1="256" y1="256" x2="96" y2="460">
+    <stop offset="0" stop-color="#57585E"></stop><stop offset="0.5" stop-color="#26272B"></stop><stop offset="1" stop-color="#0E0E11"></stop>
+  </linearGradient>
+  <linearGradient id="LSil1" gradientUnits="userSpaceOnUse" x1="256" y1="256" x2="440" y2="72">
+    <stop offset="0" stop-color="#FFFFFF"></stop><stop offset="0.55" stop-color="#E9EBED"></stop><stop offset="1" stop-color="#B9BEC4"></stop>
+  </linearGradient>
+  <linearGradient id="LSil2" gradientUnits="userSpaceOnUse" x1="256" y1="256" x2="452" y2="428">
+    <stop offset="0" stop-color="#F4F5F6"></stop><stop offset="0.5" stop-color="#C3C7CC"></stop><stop offset="1" stop-color="#84888F"></stop>
+  </linearGradient>
+  <radialGradient id="LGloss" cx="0.34" cy="0.26" r="0.72">
+    <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"></stop><stop offset="0.35" stop-color="#FFFFFF" stop-opacity="0.1"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop>
+  </radialGradient>
+  <radialGradient id="LShade" cx="0.66" cy="0.7" r="0.85">
+    <stop offset="0.6" stop-color="#000000" stop-opacity="0"></stop><stop offset="1" stop-color="#000000" stop-opacity="0.16"></stop>
+  </radialGradient>
+  <clipPath id="LClip"><circle cx="256" cy="256" r="244"></circle></clipPath></defs>
+<g transform="translate(8,8) scale(0.75)"><g clip-path="url(#LClip)">
+    <circle cx="256" cy="256" r="244" fill="#FFFFFF"></circle>
+    <path d="M 256 256 C 232 212 120 212 15.6 298.4 A 244 244 0 0 1 213.6 15.6 C 300 120 300 232 256 256 Z" fill="url(#LRed)"></path>
+    <path d="M 256 256 C 212 280 212 392 298.4 496.4 A 244 244 0 0 1 15.6 298.4 C 120 212 232 212 256 256 Z" fill="url(#LBlk)"></path>
+    <path d="M 256 256 C 300 232 300 120 213.6 15.6 A 244 244 0 0 1 496.4 213.6 C 392 300 280 300 256 256 Z" fill="url(#LSil1)"></path>
+    <path d="M 256 256 C 280 300 392 300 496.4 213.6 A 244 244 0 0 1 298.4 496.4 C 212 392 212 280 256 256 Z" fill="url(#LSil2)"></path>
+    <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round">
+      <path d="M 256 256 C 300 232 300 120 213.6 15.6"></path><path d="M 256 256 C 280 300 392 300 496.4 213.6"></path><path d="M 256 256 C 212 280 212 392 298.4 496.4"></path><path d="M 256 256 C 232 212 120 212 15.6 298.4"></path>
+    </g>
+    <circle cx="256" cy="256" r="244" fill="url(#LGloss)"></circle>
+    <circle cx="256" cy="256" r="244" fill="url(#LShade)"></circle>
+  </g></g>
+<g font-family="Georgia, &#39;Times New Roman&#39;, serif">
+  <text x="428" y="128" font-size="64" font-weight="700" fill="#C8102E">Workplace</text>
+  <text x="428" y="222" font-size="64" font-weight="400" fill="#6B6E73">Learning</text>
+  <text x="428" y="316" font-size="64" font-weight="400" fill="#6B6E73">System</text>
+</g>
+</svg>
