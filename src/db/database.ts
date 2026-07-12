@@ -12,7 +12,7 @@ import * as SQLite from 'expo-sqlite';
 export type DB = SQLite.SQLiteDatabase;
 
 const DB_NAME = 'soteria.db';
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 let dbPromise: Promise<DB> | null = null;
 
@@ -355,6 +355,33 @@ async function migrate(db: DB): Promise<void> {
     await addColumnIfMissing(db, 'disclosure_log', 'pushed', 'INTEGER NOT NULL DEFAULT 0');
   }
 
+  // v4 — legal-grade report briefs (the two-agent CSP + attorney AI narrative).
+  // Audit-level, one current brief per audit. The AI drafts narrative TEXT only;
+  // ratings and scores are never stored here — they recompute deterministically
+  // at render (Non-Negotiable #2). A brief is a draft until a human accepts it
+  // (accepted_at set), mirroring the item-level ai_draft_accepted flow; only an
+  // accepted brief is a durable org record and syncs. `pushed` is the server
+  // push delta cursor, exactly like events/disclosures.
+  if (current < 4) await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS report_briefs (
+      id TEXT PRIMARY KEY NOT NULL,
+      org_id TEXT NOT NULL,
+      audit_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      model TEXT NOT NULL,
+      library_version_id TEXT NOT NULL,
+      generated_at TEXT NOT NULL,
+      generated_by TEXT NOT NULL,
+      accepted_by TEXT,
+      accepted_at TEXT,
+      ai_generated INTEGER NOT NULL DEFAULT 1,
+      sync_state TEXT NOT NULL DEFAULT 'local',
+      pushed INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_briefs_audit ON report_briefs(audit_id);
+  `);
+
   await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
 }
 
@@ -362,6 +389,7 @@ async function migrate(db: DB): Promise<void> {
 export async function resetDatabase(): Promise<void> {
   const db = await getDatabase();
   await db.execAsync(`
+    DELETE FROM report_briefs;
     DELETE FROM disclosure_log;
     DELETE FROM corrective_actions;
     DELETE FROM attachments;

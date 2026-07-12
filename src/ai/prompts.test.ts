@@ -3,7 +3,13 @@ import {
   buildObservationPolish,
   buildRecommendationDraft,
   buildAriaCoach,
+  buildCspFindingNarrative,
+  buildAttorneyFindingReview,
+  buildExecSummary,
+  EXEC_SUMMARY_TAGS,
   type GroundingItem,
+  type FindingDigest,
+  type BriefAuditContext,
 } from './prompts';
 
 const ITEM: GroundingItem = {
@@ -69,5 +75,67 @@ describe('ARIA Coach', () => {
     expect(p.kind).toBe('aria_coach');
     expect(p.system).toMatch(/ONLY the regulatory requirement, evidence protocol, and citation/i);
     expect(p.system).toContain("isn't covered by this item's requirement");
+  });
+});
+
+// ————— Legal-grade report brief (two-agent) ————————————————————————————————
+
+const NEVER_RATE_RE = /NEVER state, imply, suggest, or recommend a rating/i;
+const NO_LAW_RE = /Do NOT write any statute, CFR, or code section number/i;
+const NOT_LEGAL_ADVICE_RE = /NOT legal advice/i;
+
+describe('CSP finding narrative', () => {
+  const p = buildCspFindingNarrative(ITEM, 'High', 'two PRCS lacked danger signs', 'post signage', true);
+  it('is grounded, never rates, and never mints law', () => {
+    expect(p.kind).toBe('csp_finding_narrative');
+    expect(p.system).toMatch(/Certified Safety Professional/);
+    expect(p.system).toMatch(NEVER_RATE_RE);
+    expect(p.system).toMatch(NO_LAW_RE);
+    expect(p.user).toContain(ITEM.citation);
+    expect(p.user).toContain('Evidence protocol');
+  });
+  it('passes the rating and SIF flag as context only', () => {
+    expect(p.user).toMatch(/context only, do not echo as a verdict/i);
+    expect(p.user).toMatch(/SIF .* flagged by the auditor: yes/i);
+    expect(p.user).toContain('two PRCS lacked danger signs');
+  });
+});
+
+describe('Attorney finding review', () => {
+  const p = buildAttorneyFindingReview(ITEM, 'The hazard is exposure to an engulfment risk.');
+  it('is legal-readiness only (not legal advice), strips liability language, never rates', () => {
+    expect(p.kind).toBe('attorney_review');
+    expect(p.system).toMatch(NOT_LEGAL_ADVICE_RE);
+    expect(p.system).toMatch(/gross negligence|willful|reckless/i); // named as words to remove
+    expect(p.system).toMatch(NEVER_RATE_RE);
+    expect(p.system).toMatch(NO_LAW_RE);
+    expect(p.user).toContain('engulfment risk');
+  });
+});
+
+describe('Executive summary', () => {
+  const context: BriefAuditContext = {
+    title: 'Acme Q3',
+    statePlan: null,
+    overall: { rawScore: 98.6, effectiveMax: 160, percent: 61.6, tier: 'Bronze' },
+    findingCount: 2,
+    sifCount: 1,
+    highPlusCount: 1,
+  };
+  const digests: FindingDigest[] = [
+    { item_code: 'CS-1', section_code: 'CS', rating: 'Very High', sif_potential: true, requirement: 'r', citation: '29 CFR 1910.146' },
+  ];
+  const p = buildExecSummary(context, digests);
+  it('requests the four tagged sections and asserts human-determined scores', () => {
+    expect(p.kind).toBe('exec_summary');
+    for (const tag of EXEC_SUMMARY_TAGS) expect(p.system).toContain(`[${tag}]`);
+    expect(p.system).toMatch(/ratings and scores were determined by the qualified human auditor, not\s+by AI/i);
+    expect(p.system).toMatch(NOT_LEGAL_ADVICE_RE);
+    expect(p.system).toMatch(NEVER_RATE_RE);
+  });
+  it('feeds the overall numbers and finding digest as read-only context', () => {
+    expect(p.user).toMatch(/98\.6 \/ 160/);
+    expect(p.user).toMatch(/do not re-judge/i);
+    expect(p.user).toContain('CS-1');
   });
 });

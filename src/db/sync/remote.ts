@@ -3,6 +3,7 @@
  * Supabase directly, so PowerSync (or another backend) could replace it later.
  */
 import type { Rating } from '@soteria/scoring-engine';
+import type { ReportBriefContent } from '@/db/types';
 
 export interface RemoteAuditItem {
   id: string;
@@ -137,8 +138,26 @@ export interface RemoteDisclosure {
   id: string;
   org_id: string;
   audit_id: string;
-  action: 'view' | 'export';
+  action: 'view' | 'export' | 'brief_generated' | 'brief_accepted';
   created_at: string;
+}
+
+/** An accepted legal brief as it lives on the server (content is jsonb). Only
+ *  accepted briefs are ever pushed. generated_by/accepted_by are text (not auth
+ *  FKs) so field-mode actor ids survive as provenance. */
+export interface RemoteReportBrief {
+  id: string;
+  org_id: string;
+  audit_id: string;
+  content: ReportBriefContent;
+  model: string;
+  library_version_id: string;
+  generated_at: string;
+  generated_by: string;
+  accepted_by: string | null;
+  accepted_at: string | null;
+  ai_generated: boolean;
+  updated_at: string;
 }
 
 export interface RemoteAdapter {
@@ -164,4 +183,8 @@ export interface RemoteAdapter {
   insertDisclosures(rows: RemoteDisclosure[]): Promise<void>;
   /** Append immutable events (the server table is insert-only). */
   insertEvents(events: RemoteEvent[]): Promise<void>;
+  /** Accepted report briefs for one audit (RLS-scoped). */
+  pullReportBriefs(auditId: string): Promise<RemoteReportBrief[]>;
+  /** Upsert accepted report briefs (id-idempotent). */
+  upsertReportBriefs(rows: RemoteReportBrief[]): Promise<void>;
 }

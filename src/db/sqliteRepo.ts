@@ -15,12 +15,15 @@ import type {
   AuditStatus,
   CorrectiveAction,
   DisclosureLogEntry,
+  ReportBrief,
+  ReportBriefContent,
   ScopingAnswer,
 } from './types';
 import type {
   Repo,
   CreateAuditInput,
   AuditLibraryContext,
+  NewReportBrief,
 } from './repo';
 import type { Rating } from '@soteria/scoring-engine';
 import { computeApplicableCodes } from '@/domain/applicability';
@@ -90,6 +93,25 @@ function toEvent(r: EventRow): AuditItemEvent {
     id: r.id, org_id: r.org_id, audit_id: r.audit_id, audit_item_id: r.audit_item_id,
     type: r.type as AuditEventType, payload: JSON.parse(r.payload) as Record<string, unknown>,
     actor_id: r.actor_id, created_at: r.created_at,
+  };
+}
+
+interface BriefRow {
+  id: string; org_id: string; audit_id: string; content: string; model: string;
+  library_version_id: string; generated_at: string; generated_by: string;
+  accepted_by: string | null; accepted_at: string | null; ai_generated: number;
+  sync_state: string; updated_at: string;
+}
+function toBrief(r: BriefRow): ReportBrief {
+  return {
+    id: r.id, org_id: r.org_id, audit_id: r.audit_id,
+    content: JSON.parse(r.content) as ReportBriefContent,
+    model: r.model, library_version_id: r.library_version_id,
+    generated_at: r.generated_at, generated_by: r.generated_by,
+    accepted_by: r.accepted_by, accepted_at: r.accepted_at,
+    ai_generated: bool(r.ai_generated),
+    sync_state: r.sync_state as ReportBrief['sync_state'],
+    updated_at: r.updated_at,
   };
 }
 
@@ -193,6 +215,7 @@ export function createSqliteRepo(db: DB): Repo {
         await db.runAsync('DELETE FROM audit_item_events WHERE audit_id = ?', [id]);
         await db.runAsync('DELETE FROM corrective_actions WHERE audit_id = ?', [id]);
         await db.runAsync('DELETE FROM disclosure_log WHERE audit_id = ?', [id]);
+        await db.runAsync('DELETE FROM report_briefs WHERE audit_id = ?', [id]);
         await db.runAsync('DELETE FROM audit_items WHERE audit_id = ?', [id]);
         await db.runAsync('DELETE FROM scoping_answers WHERE audit_id = ?', [id]);
         await db.runAsync('DELETE FROM audits WHERE id = ?', [id]);
@@ -537,6 +560,70 @@ export function createSqliteRepo(db: DB): Repo {
         'SELECT * FROM disclosure_log WHERE audit_id = ? ORDER BY created_at', [audit_id],
       );
       return rows.map((r) => ({ ...r, action: r.action as DisclosureLogEntry['action'] }));
+    },
+
+    async getReportBrief(audit_id) {
+      // One brief per audit — the row id mirrors the audit id.
+      const r = await db.getFirstAsync<BriefRow>('SELECT * FROM report_briefs WHERE id = ?', [audit_id]);
+      return r ? toBrief(r) : null;
+    },
+
+    async saveReportBrief(input: NewReportBrief, actor_id) {
+      const ts = nowIso();
+      await db.withTransactionAsync(async () => {
+        // Upsert in place (id = audit_id). generated_at/generated_by are kept
+        // from the first accept (they are not in the UPDATE set); accepting
+        // re-arms the push cursor so the accepted brief syncs.
+        await db.runAsync(
+          `INSERT INTO report_briefs (id, org_id, audit_id, content, model, library_version_id, generated_at, generated_by, accepted_by, accepted_at, ai_generated, sync_state, pushed, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'local', 0, ?)
+           ON CONFLICT(id) DO UPDATE SET content=excluded.content, model=excluded.model,
+             library_version_id=excluded.library_version_id, accepted_by=excluded.accepted_by,
+             accepted_at=excluded.accepted_at, sync_state='local', pushed=0, updated_at=excluded.updated_at`,
+          [input.audit_id, input.org_id, input.audit_id, JSON.stringify(input.content), input.model,
+           input.library_version_id, ts, actor_id, actor_id, ts, ts],
+        );
+        await db.runAsync(
+          `INSERT INTO disclosure_log (id, org_id, audit_id, actor_id, action, created_at) VALUES (?, ?, ?, ?, 'brief_accepted', ?)`,
+          [newId(), input.org_id, input.audit_id, actor_id, ts],
+        );
+      });
+      const r = await db.getFirstAsync<BriefRow>('SELECT * FROM report_briefs WHERE id = ?', [input.audit_id]);
+      return toBrief(r!);
+    },
+
+    async listUnpushedBriefs(audit_id) {
+      const rows = await db.getAllAsync<BriefRow>(
+        'SELECT * FROM report_briefs WHERE audit_id = ? AND pushed = 0 ORDER BY generated_at', [audit_id],
+      );
+      return rows.map(toBrief);
+    },
+
+    async markBriefsPushed(ids) {
+      if (ids.length === 0) return;
+      for (let i = 0; i < ids.length; i += 500) {
+        const chunk = ids.slice(i, i + 500);
+        await db.runAsync(
+          `UPDATE report_briefs SET pushed = 1, sync_state = 'synced' WHERE id IN (${chunk.map(() => '?').join(',')})`,
+          chunk,
+        );
+      }
+    },
+
+    async applyRemoteBriefs(rows) {
+      await db.withTransactionAsync(async () => {
+        for (const r of rows) {
+          await db.runAsync(
+            `INSERT INTO report_briefs (id, org_id, audit_id, content, model, library_version_id, generated_at, generated_by, accepted_by, accepted_at, ai_generated, sync_state, pushed, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', 1, ?)
+             ON CONFLICT(id) DO UPDATE SET content=excluded.content, model=excluded.model,
+               accepted_by=excluded.accepted_by, accepted_at=excluded.accepted_at,
+               ai_generated=excluded.ai_generated, sync_state='synced', updated_at=excluded.updated_at`,
+            [r.id, r.org_id, r.audit_id, JSON.stringify(r.content), r.model, r.library_version_id,
+             r.generated_at, r.generated_by, r.accepted_by, r.accepted_at, int(r.ai_generated), r.updated_at],
+          );
+        }
+      });
     },
   };
 }

@@ -19,6 +19,7 @@ import type {
   RemoteScopingAnswer,
   RemoteCorrectiveAction,
   RemoteDisclosure,
+  RemoteReportBrief,
 } from './remote';
 
 /**
@@ -140,6 +141,22 @@ export function createSupabaseRemote(): RemoteAdapter {
         ignoreDuplicates: true,
       });
       if (error) throw new Error(`insertEvents: ${error.message}`);
+    },
+
+    async pullReportBriefs(auditId) {
+      const supabase = getSupabase();
+      if (!supabase) return [];
+      const { data, error } = await supabase.from('report_briefs').select('*').eq('audit_id', auditId);
+      if (error) throw new Error(`pullReportBriefs: ${error.message}`);
+      return ((data ?? []) as RemoteReportBrief[]).map((r) => ({ ...r, updated_at: isoZ(r.updated_at) }));
+    },
+
+    async upsertReportBriefs(rows: RemoteReportBrief[]) {
+      if (rows.length === 0) return;
+      const supabase = getSupabase();
+      if (!supabase) return;
+      const { error } = await supabase.from('report_briefs').upsert(rows, { onConflict: 'id' });
+      if (error) throw new Error(`upsertReportBriefs: ${error.message}`);
     },
   };
 }

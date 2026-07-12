@@ -149,6 +149,56 @@ describe('disclosure push cursor', () => {
   });
 });
 
+describe('report briefs (AI drafts; humans accept)', () => {
+  const content = {
+    execSummary: 's', methodology: 'm', chainOfCustody: 'c', limitations: 'l',
+    legalDisclaimer: 'd', findingNarratives: { x: 'n' }, citations: [],
+  };
+
+  it('accepting stamps the approver, logs brief_accepted, and is syncable once', async () => {
+    const { repo, audit } = await seeded();
+    const accepted = await repo.saveReportBrief(
+      { audit_id: audit.id, org_id: 'o', content, model: 'claude-opus-4-8', library_version_id: 'v' },
+      'lead',
+    );
+    expect(accepted.id).toBe(audit.id); // one brief per audit; id mirrors the audit
+    expect(accepted.accepted_by).toBe('lead');
+    expect(accepted.accepted_at).not.toBeNull();
+    expect((await repo.getReportBrief(audit.id))?.content.execSummary).toBe('s');
+    expect((await repo.listDisclosures(audit.id)).some((d) => d.action === 'brief_accepted')).toBe(true);
+
+    const unpushed = await repo.listUnpushedBriefs(audit.id);
+    expect(unpushed.map((b) => b.id)).toEqual([accepted.id]);
+    await repo.markBriefsPushed(unpushed.map((b) => b.id));
+    expect(await repo.listUnpushedBriefs(audit.id)).toEqual([]);
+  });
+
+  it('re-accepting updates in place (one row), preserves first-generation time, re-arms the push cursor', async () => {
+    const { repo, audit } = await seeded();
+    const first = await repo.saveReportBrief(
+      { audit_id: audit.id, org_id: 'o', content, model: 'm', library_version_id: 'v' }, 'lead',
+    );
+    await repo.markBriefsPushed([first.id]);
+    const second = await repo.saveReportBrief(
+      { audit_id: audit.id, org_id: 'o', content: { ...content, execSummary: 'edited' }, model: 'm', library_version_id: 'v' }, 'lead2',
+    );
+    expect(second.id).toBe(first.id);
+    expect(second.content.execSummary).toBe('edited');
+    expect(second.generated_at).toBe(first.generated_at); // first-generation time preserved
+    // A fresh accept re-arms the cursor so the update pushes.
+    expect((await repo.listUnpushedBriefs(audit.id)).map((b) => b.id)).toEqual([first.id]);
+  });
+
+  it('deleteAudit purges the brief', async () => {
+    const { repo, audit } = await seeded();
+    await repo.saveReportBrief(
+      { audit_id: audit.id, org_id: 'o', content, model: 'm', library_version_id: 'v' }, 'lead',
+    );
+    await repo.deleteAudit(audit.id);
+    expect(await repo.getReportBrief(audit.id)).toBeNull();
+  });
+});
+
 describe('applyRemoteAttachments', () => {
   it('inserts unknown rows but never overwrites or resurrects local ones', async () => {
     const { repo, items } = await seeded();

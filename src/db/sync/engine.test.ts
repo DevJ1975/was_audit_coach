@@ -47,6 +47,8 @@ class FakeRemote implements RemoteAdapter {
   async upsertCorrectiveActions() {}
   async insertDisclosures() {}
   async insertEvents() {}
+  async pullReportBriefs() { return []; }
+  async upsertReportBriefs() {}
 }
 
 function makeEngine() {

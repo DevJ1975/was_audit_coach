@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildReportModel, renderReportHtml } from './report';
-import type { Audit, AuditItem, LibraryItem } from '@/db/types';
+import { buildReportModel, renderReportHtml, type ReportBriefRender } from './report';
+import type { Audit, AuditItem, LibraryItem, ReportBriefContent } from '@/db/types';
 import type { Rating } from '@soteria/scoring-engine';
 
 function lib(item_code: string, section_code: string, max_points: number, sif = false): LibraryItem {
@@ -73,5 +73,50 @@ describe('renderReportHtml', () => {
     expect(html).toContain('Section scores');
     expect(html).toContain('CS-1');
     expect(html).toContain('29 CFR 1910.x');
+  });
+});
+
+describe('renderReportHtml with an accepted legal brief', () => {
+  const items = [ai('CS-1', 'CS', 'Very High'), ai('CS-2', 'CS', 'Low')];
+  const model = buildReportModel(AUDIT, items, LIBRARY, SECTION_NAMES, 'now');
+  const content: ReportBriefContent = {
+    execSummary: 'Overall posture summary for counsel.',
+    methodology: 'The audit followed the WLS workbook basis.',
+    chainOfCustody: 'Every rating is an immutable event.',
+    limitations: 'Point-in-time assessment.',
+    legalDisclaimer: 'AI-assisted; not legal advice; human-rated.',
+    findingNarratives: { 'CS-1': 'Engulfment hazard characterization with <unsafe> chars.' },
+    citations: [],
+  };
+  const brief: ReportBriefRender = { content, acceptedBy: 'lead-auditor-1', acceptedAt: '2026-07-11 09:00' };
+  const html = renderReportHtml(model, undefined, brief);
+
+  it('interleaves the labeled AI sections and per-finding narrative', () => {
+    expect(html).toContain('Overall posture summary for counsel.');
+    expect(html).toContain('Scope &amp; methodology');
+    expect(html).toContain('Evidentiary integrity &amp; chain of custody');
+    expect(html).toContain('Limitations &amp; reservations');
+    expect(html).toContain('Risk characterization');
+    expect(html).toMatch(/AI-drafted narrative — reviewed &amp; accepted by lead-auditor-1/);
+  });
+
+  it('escapes AI text and always states scores were human-determined', () => {
+    expect(html).toContain('&lt;unsafe&gt;'); // AI narrative is escaped
+    expect(html).toMatch(/determined by the human auditor/i);
+    expect(html).toContain('AI-assisted; not legal advice; human-rated.');
+  });
+
+  it('leaves the deterministic scores untouched by the brief', () => {
+    const withBrief = renderReportHtml(model, undefined, brief);
+    const without = renderReportHtml(model);
+    // The section-score table row for CS is identical with or without the brief.
+    const row = /<td class="num">([\d.]+ \/ \d+)<\/td>/;
+    expect(withBrief.match(row)?.[1]).toBe(without.match(row)?.[1]);
+  });
+
+  it('adds nothing when no brief is passed', () => {
+    const plain = renderReportHtml(model);
+    expect(plain).not.toContain('AI-drafted narrative');
+    expect(plain).not.toContain('Risk characterization');
   });
 });
